@@ -62,6 +62,14 @@ type Configuration struct {
 	CreatedAt               pgtype.Timestamptz `json:"created_at"`
 }
 
+type Exercise struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	Type        string             `json:"type"`
+	WorkoutType string             `json:"workout_type"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type Food struct {
 	ID                 pgtype.UUID        `json:"id"`
 	Name               string             `json:"name"`
@@ -115,4 +123,60 @@ type Token struct {
 	Scope     TokenScope         `json:"scope"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type WorkoutSession struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkoutType string             `json:"workout_type"`
+	TemplateID  pgtype.UUID        `json:"template_id"`
+	Note        pgtype.Text        `json:"note"`
+	Date        pgtype.Date        `json:"date"`
+	FinishedAt  pgtype.Timestamptz `json:"finished_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkoutSessionExercise struct {
+	ID           pgtype.UUID        `json:"id"`
+	SessionID    pgtype.UUID        `json:"session_id"`
+	ExerciseID   pgtype.UUID        `json:"exercise_id"`
+	ExerciseName string             `json:"exercise_name"`
+	Note         pgtype.Text        `json:"note"`
+	Position     int32              `json:"position"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkoutSet struct {
+	ID                pgtype.UUID        `json:"id"`
+	SessionExerciseID pgtype.UUID        `json:"session_exercise_id"`
+	SetType           string             `json:"set_type"`
+	Confirmed         bool               `json:"confirmed"`
+	Note              pgtype.Text        `json:"note"`
+	WeightKg          pgtype.Numeric     `json:"weight_kg"`
+	Reps              pgtype.Int4        `json:"reps"`
+	DurationSec       pgtype.Int4        `json:"duration_sec"`
+	DistanceM         pgtype.Numeric     `json:"distance_m"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkoutTemplate struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	WorkoutType string             `json:"workout_type"`
+	IsDefault   bool               `json:"is_default"`
+	Archived    bool               `json:"archived"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkoutTemplateSet struct {
+	ID           pgtype.UUID        `json:"id"`
+	TemplateID   pgtype.UUID        `json:"template_id"`
+	ExerciseID   pgtype.UUID        `json:"exercise_id"`
+	ExerciseName string             `json:"exercise_name"`
+	Position     int32              `json:"position"`
+	SetType      string             `json:"set_type"`
+	WeightKg     pgtype.Numeric     `json:"weight_kg"`
+	Reps         pgtype.Int4        `json:"reps"`
+	DurationSec  pgtype.Int4        `json:"duration_sec"`
+	DistanceM    pgtype.Numeric     `json:"distance_m"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
