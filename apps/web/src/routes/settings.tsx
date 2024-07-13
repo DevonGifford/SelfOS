@@ -26,12 +26,6 @@ export function SettingsPage() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         )}
       </SectionStat>
-
-      <SectionStat label="Training">
-        <p className="text-sm text-muted-foreground">
-          Training Schedule settings will live here once the Training domain exists.
-        </p>
-      </SectionStat>
     </div>
   );
 }
