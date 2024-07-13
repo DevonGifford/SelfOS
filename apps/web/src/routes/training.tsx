@@ -1,38 +1,31 @@
-import { DemoDataBadge } from "@/components/ui/demo-data-badge";
-import { Header } from "@/components/ui/header";
-import { SectionStat } from "@/components/ui/section-stat";
-import { useTraining } from "@/features/training/use-training";
+import { useState } from "react";
 
+import { FinishedScreen } from "@/features/training/finished-screen";
+import { ErrorBlock, LoadingSkeleton } from "@/features/training/load-states";
+import { LoggingScreen } from "@/features/training/logging-screen";
+import { StartScreen } from "@/features/training/start-screen";
+import { useUnfinishedWorkoutSession, useWorkoutSession } from "@/features/training/use-workout-sessions";
+
+// Step is derived, not stored: an unfinished Session means "logging",
+// none means "start." "Finished" is the one genuinely local piece — once
+// finishWorkoutSession succeeds the Session drops out of "unfinished," so
+// this holds which Session to show the recap for until the user taps Done.
 export function TrainingPage() {
-  const query = useTraining();
+  const unfinishedQuery = useUnfinishedWorkoutSession();
+  const [finishedSessionId, setFinishedSessionId] = useState<string | null>(null);
+  const finishedSessionQuery = useWorkoutSession(finishedSessionId);
 
-  if (!query.data) return null;
+  if (unfinishedQuery.isPending) return <LoadingSkeleton />;
+  if (unfinishedQuery.isError) return <ErrorBlock />;
 
-  const { data } = query;
+  if (finishedSessionId) {
+    if (!finishedSessionQuery.data) return <LoadingSkeleton />;
+    return <FinishedScreen session={finishedSessionQuery.data} onDone={() => setFinishedSessionId(null)} />;
+  }
 
-  return (
-    <div className="p-4">
-      <div className="mb-8">
-        <Header eyebrow="SELF/OS" badge={<DemoDataBadge domain="training" />} title="Training" />
-      </div>
+  if (unfinishedQuery.data) {
+    return <LoggingScreen session={unfinishedQuery.data} onFinished={setFinishedSessionId} />;
+  }
 
-      <SectionStat label="Split" value={data.split} />
-
-      <SectionStat label="Exercises">
-        <ul className="space-y-3">
-          {data.exercises.map((exercise) => (
-            <li
-              key={exercise.name}
-              className="flex items-baseline justify-between"
-            >
-              <span>{exercise.name}</span>
-              <span className="font-mono text-sm text-muted-foreground">
-                {exercise.sets}×{exercise.reps} @ {exercise.weight}kg
-              </span>
-            </li>
-          ))}
-        </ul>
-      </SectionStat>
-    </div>
-  );
+  return <StartScreen />;
 }
