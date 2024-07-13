@@ -592,6 +592,10 @@ func TestLastSetsForExerciseScopedByWorkoutType(t *testing.T) {
 	doRequest(h, http.MethodPost, "/api/training/sets", CreateWorkoutSetRequest{
 		SessionExerciseID: sessionExercise.ID, SetType: "working", WeightKg: &weight, Reps: &reps,
 	})
+	// The progressive-overload lookup only ever considers finished
+	// Sessions (a stale in-progress Session shouldn't surface as "last
+	// time," see the finished_at filter on GetLastSessionExerciseForType).
+	doRequest(h, http.MethodPost, "/api/training/sessions/"+pushSession.ID+"/finish", nil)
 
 	rec = doRequest(h, http.MethodGet, "/api/training/exercises/"+bench.ID+"/last?workoutType=push", nil)
 	var pushSets []WorkoutSetResponse
@@ -609,6 +613,7 @@ func TestLastSetsForExerciseScopedByWorkoutType(t *testing.T) {
 	doRequest(h, http.MethodPost, "/api/training/sets", CreateWorkoutSetRequest{
 		SessionExerciseID: sessionExercise.ID, SetType: "working", WeightKg: &freestyleWeight, Reps: &reps,
 	})
+	doRequest(h, http.MethodPost, "/api/training/sessions/"+freestyleSession.ID+"/finish", nil)
 
 	rec = doRequest(h, http.MethodGet, "/api/training/exercises/"+bench.ID+"/last?workoutType=push", nil)
 	json.Unmarshal(rec.Body.Bytes(), &pushSets)

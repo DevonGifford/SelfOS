@@ -349,6 +349,7 @@ from workout_session_exercises
 join workout_sessions on workout_sessions.id = workout_session_exercises.session_id
 where workout_session_exercises.exercise_id = $1
   and workout_sessions.workout_type = $2
+  and workout_sessions.finished_at is not null
 order by workout_sessions.date desc, workout_sessions.created_at desc
 limit 1
 `
