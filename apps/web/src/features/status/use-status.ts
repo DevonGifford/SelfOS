@@ -71,5 +71,5 @@ function selectLastFinishedSession(sessions: WorkoutSessions) {
   if (finished.length === 0) return null;
 
   const latest = finished.reduce((a, b) => (a.date >= b.date ? a : b));
-  return { workoutType: latest.workoutType, date: latest.date };
+  return { id: latest.id, workoutType: latest.workoutType, date: latest.date };
 }

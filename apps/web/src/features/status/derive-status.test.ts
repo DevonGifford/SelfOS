@@ -6,7 +6,7 @@ import type { Habits } from "@/data/schemas/habits";
 import type { Nutrition } from "@/data/schemas/nutrition";
 
 const training = {
-  lastFinishedSession: { workoutType: "push" as const, date: "2026-09-11" },
+  lastFinishedSession: { id: "sess-1", workoutType: "push" as const, date: "2026-09-11" },
   unfinishedSession: null,
 };
 

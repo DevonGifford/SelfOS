@@ -6,7 +6,7 @@ import type { Status } from "@/data/schemas/status";
 import type { SessionWorkoutType } from "@/data/schemas/training-shared";
 
 type TrainingStatus = {
-  lastFinishedSession: { workoutType: SessionWorkoutType; date: string } | null;
+  lastFinishedSession: { id: string; workoutType: SessionWorkoutType; date: string } | null;
   unfinishedSession: { id: string; workoutType: SessionWorkoutType } | null;
 };
 

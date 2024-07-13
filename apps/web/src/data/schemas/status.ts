@@ -10,7 +10,7 @@ const MacroTotalSchema = z.object({
 export const StatusSchema = z.object({
   training: z.object({
     lastFinishedSession: z
-      .object({ workoutType: SessionWorkoutTypeSchema, date: z.string() })
+      .object({ id: z.string(), workoutType: SessionWorkoutTypeSchema, date: z.string() })
       .nullable(),
     unfinishedSession: z
       .object({ id: z.string(), workoutType: SessionWorkoutTypeSchema })
