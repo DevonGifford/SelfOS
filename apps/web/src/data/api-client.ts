@@ -270,19 +270,6 @@ export async function getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
   return WorkoutTemplatesSchema.parse(body);
 }
 
-export async function createWorkoutTemplate(input: {
-  name: string;
-  workoutType: WorkoutType;
-}): Promise<WorkoutTemplate> {
-  const response = await fetch(TEMPLATES_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const body = await parseOrThrow(response);
-  return WorkoutTemplateSchema.parse(body);
-}
-
 export async function getWorkoutTemplateSets(templateId: string): Promise<WorkoutTemplateSets> {
   const response = await fetch(`${TEMPLATES_URL}/${templateId}/sets`);
   const body = await parseOrThrow(response);

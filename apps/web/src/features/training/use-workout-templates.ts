@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { toastManager } from "@/components/ui/toast";
 import {
   archiveWorkoutTemplate,
-  createWorkoutTemplate,
   getWorkoutTemplates,
   getWorkoutTemplateSets,
   restoreWorkoutTemplate,
   setDefaultWorkoutTemplate,
 } from "@/data/client";
 import type { WorkoutTemplates } from "@/data/schemas/workout-templates";
-import type { WorkoutType } from "@/data/schemas/training-shared";
 
 export const WORKOUT_TEMPLATES_KEY = ["workout-templates"];
 
@@ -22,17 +21,6 @@ export function useWorkoutTemplateSets(templateId: string | null) {
     queryKey: ["workout-template-sets", templateId],
     queryFn: () => getWorkoutTemplateSets(templateId!),
     enabled: templateId !== null,
-  });
-}
-
-export function useCreateWorkoutTemplate() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: { name: string; workoutType: WorkoutType }) => createWorkoutTemplate(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: WORKOUT_TEMPLATES_KEY });
-    },
   });
 }
 
@@ -75,6 +63,7 @@ export function useRestoreWorkoutTemplate() {
     },
     onError: (_error, _id, context) => {
       if (context) queryClient.setQueryData(WORKOUT_TEMPLATES_KEY, context.previous);
+      toastManager.add({ title: "Failed to restore template", timeout: 4000 });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: WORKOUT_TEMPLATES_KEY });
@@ -104,6 +93,7 @@ export function useSetDefaultWorkoutTemplate() {
     },
     onError: (_error, _id, context) => {
       if (context) queryClient.setQueryData(WORKOUT_TEMPLATES_KEY, context.previous);
+      toastManager.add({ title: "Failed to set default template", timeout: 4000 });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: WORKOUT_TEMPLATES_KEY });

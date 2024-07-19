@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { toastManager } from "@/components/ui/toast";
 import {
   cancelWorkoutSession,
   createWorkoutSession,
@@ -41,6 +42,9 @@ export function useCreateWorkoutSession() {
   return useMutation({
     mutationFn: (input: { workoutType: SessionWorkoutType; templateId?: string | null }) =>
       createWorkoutSession(input),
+    onError: () => {
+      toastManager.add({ title: "Failed to start workout", timeout: 4000 });
+    },
     onSuccess: (created) => {
       queryClient.setQueryData<WorkoutSession>(UNFINISHED_SESSION_KEY, created);
       queryClient.invalidateQueries({ queryKey: WORKOUT_SESSIONS_KEY });
@@ -61,6 +65,9 @@ export function useUpdateWorkoutSession() {
       startedAt?: string;
       finishedAt?: string;
     }) => updateWorkoutSession(id, input),
+    onError: () => {
+      toastManager.add({ title: "Failed to update session", timeout: 4000 });
+    },
     onSuccess: (updated) => {
       queryClient.setQueryData(["workout-session", updated.id], updated);
       queryClient.setQueryData<WorkoutSession | null>(UNFINISHED_SESSION_KEY, (old) =>
@@ -76,6 +83,9 @@ export function useFinishWorkoutSession() {
 
   return useMutation({
     mutationFn: (id: string) => finishWorkoutSession(id),
+    onError: () => {
+      toastManager.add({ title: "Failed to finish workout", timeout: 4000 });
+    },
     onSuccess: (updated) => {
       queryClient.setQueryData(["workout-session", updated.id], updated);
       queryClient.setQueryData(UNFINISHED_SESSION_KEY, null);
@@ -91,6 +101,9 @@ export function useCancelWorkoutSession() {
 
   return useMutation({
     mutationFn: (id: string) => cancelWorkoutSession(id),
+    onError: () => {
+      toastManager.add({ title: "Failed to cancel workout", timeout: 4000 });
+    },
     onSuccess: (_result, id) => {
       queryClient.setQueryData(UNFINISHED_SESSION_KEY, null);
       queryClient.removeQueries({ queryKey: ["session-exercises", id] });
@@ -104,6 +117,9 @@ export function useUpdateSourceTemplate() {
 
   return useMutation({
     mutationFn: (sessionId: string) => updateSourceTemplate(sessionId),
+    onError: () => {
+      toastManager.add({ title: "Failed to update template", timeout: 4000 });
+    },
     onSuccess: (updatedTemplate) => {
       queryClient.invalidateQueries({ queryKey: ["workout-templates"] });
       queryClient.invalidateQueries({ queryKey: ["workout-template-sets", updatedTemplate.id] });

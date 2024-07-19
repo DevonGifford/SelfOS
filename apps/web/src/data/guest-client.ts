@@ -278,22 +278,6 @@ export async function getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
   return [...templates];
 }
 
-export async function createWorkoutTemplate(input: {
-  name: string;
-  workoutType: WorkoutType;
-}): Promise<WorkoutTemplate> {
-  const created: WorkoutTemplate = {
-    id: guestId(),
-    name: input.name,
-    workoutType: input.workoutType,
-    isDefault: false,
-    archived: false,
-    createdAt: new Date().toISOString(),
-  };
-  templates = [...templates, created];
-  return created;
-}
-
 export async function getWorkoutTemplateSets(templateId: string): Promise<WorkoutTemplateSets> {
   return templateSets.filter((s) => s.templateId === templateId);
 }

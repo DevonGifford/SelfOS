@@ -56,7 +56,6 @@ export const createExercise = withGuest(api.createExercise, guestClient.createEx
 export const getLastSetsForExercise = withGuest(api.getLastSetsForExercise, guestClient.getLastSetsForExercise);
 
 export const getWorkoutTemplates = withGuest(api.getWorkoutTemplates, guestClient.getWorkoutTemplates);
-export const createWorkoutTemplate = withGuest(api.createWorkoutTemplate, guestClient.createWorkoutTemplate);
 export const getWorkoutTemplateSets = withGuest(api.getWorkoutTemplateSets, guestClient.getWorkoutTemplateSets);
 export const archiveWorkoutTemplate = withGuest(api.archiveWorkoutTemplate, guestClient.archiveWorkoutTemplate);
 export const restoreWorkoutTemplate = withGuest(api.restoreWorkoutTemplate, guestClient.restoreWorkoutTemplate);

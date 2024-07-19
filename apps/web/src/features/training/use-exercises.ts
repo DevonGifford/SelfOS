@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { toastManager } from "@/components/ui/toast";
 import { createExercise, getExercises } from "@/data/client";
 import type { Exercises } from "@/data/schemas/exercises";
 import type { ExerciseType, WorkoutType } from "@/data/schemas/training-shared";
@@ -32,6 +33,7 @@ export function useCreateExercise() {
     },
     onError: (_error, _input, context) => {
       if (context) queryClient.setQueryData(EXERCISES_KEY, context.previous);
+      toastManager.add({ title: "Failed to create exercise", timeout: 4000 });
     },
     onSuccess: (created, _input, context) => {
       queryClient.setQueryData<Exercises>(EXERCISES_KEY, (old) =>

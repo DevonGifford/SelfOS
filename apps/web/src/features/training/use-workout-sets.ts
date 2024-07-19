@@ -1,5 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { toastManager } from "@/components/ui/toast";
 import { createWorkoutSet, deleteWorkoutSet, getSetsForSessionExercise, updateWorkoutSet } from "@/data/client";
 import type { SetType } from "@/data/schemas/training-shared";
 import type { WorkoutSet } from "@/data/schemas/workout-sets";
@@ -84,6 +85,7 @@ export function useCreateWorkoutSet() {
     },
     onError: (_error, _input, context) => {
       if (context) queryClient.setQueryData(context.key, context.previous);
+      toastManager.add({ title: "Failed to log set", timeout: 4000 });
     },
     onSuccess: (created, _input, context) => {
       queryClient.setQueryData<WorkoutSet[]>(context?.key ?? workoutSetsKey(created.sessionExerciseId), (old) =>
@@ -123,6 +125,7 @@ export function useUpdateWorkoutSet() {
     },
     onError: (_error, _input, context) => {
       if (context) queryClient.setQueryData(context.key, context.previous);
+      toastManager.add({ title: "Failed to update set", timeout: 4000 });
     },
     onSuccess: (updated, { sessionExerciseId }) => {
       queryClient.setQueryData<WorkoutSet[]>(workoutSetsKey(sessionExerciseId), (old) =>
@@ -146,6 +149,7 @@ export function useDeleteWorkoutSet() {
     },
     onError: (_error, _input, context) => {
       if (context) queryClient.setQueryData(context.key, context.previous);
+      toastManager.add({ title: "Failed to delete set", timeout: 4000 });
     },
   });
 }

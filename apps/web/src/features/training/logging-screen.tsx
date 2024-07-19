@@ -86,7 +86,6 @@ export function LoggingScreen({
   // null = closed, "session" = editing the session note, a session-exercise
   // id = editing that row's note. One dialog instance, one note workflow.
   const [noteEditorFor, setNoteEditorFor] = useState<string | "session" | null>(null);
-  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
 
   const sessionExercises = sessionExercisesQuery.data ?? [];
   const usedExerciseIds = new Set(sessionExercises.map((se) => se.exerciseId).filter((id): id is string => id !== null));
@@ -171,7 +170,7 @@ export function LoggingScreen({
               sessionWorkoutType={session.workoutType}
               index={index}
               total={sessionExercises.length}
-              note={exerciseNotes[se.id] ?? se.note ?? ""}
+              note={se.note ?? ""}
               onMove={(direction) => moveExercise(se.id, direction)}
               onAddNote={() => setNoteEditorFor(se.id)}
               onReplace={() => setPicker({ kind: "replace", sessionExerciseId: se.id })}
@@ -246,14 +245,13 @@ export function LoggingScreen({
           noteEditorFor === "session"
             ? (session.note ?? "")
             : noteEditorFor
-              ? (exerciseNotes[noteEditorFor] ?? sessionExercises.find((se) => se.id === noteEditorFor)?.note ?? "")
+              ? (sessionExercises.find((se) => se.id === noteEditorFor)?.note ?? "")
               : ""
         }
         onSave={(value) => {
           if (noteEditorFor === "session") {
             updateSession.mutate({ id: session.id, note: value });
           } else if (noteEditorFor) {
-            setExerciseNotes((notes) => ({ ...notes, [noteEditorFor]: value }));
             updateSessionExerciseNote.mutate({ id: noteEditorFor, note: value });
           }
         }}
