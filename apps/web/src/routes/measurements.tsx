@@ -166,7 +166,7 @@ export function MeasurementsPage() {
         <>
           <WeightSparkline entries={dailyMinimums} />
 
-          <SectionStat label="Latest" value={latest ? `${latest.kg} kg` : "—"} />
+          {/* <SectionStat label="Latest" value={latest ? `${latest.kg} kg` : "—"} /> */}
 
           <SectionStat label="Log">
             <ul>

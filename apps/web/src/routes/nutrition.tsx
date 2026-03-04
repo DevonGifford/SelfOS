@@ -13,7 +13,6 @@ import { useFoodEntries } from "@/features/nutrition/use-food-entries";
 import { useFoods } from "@/features/nutrition/use-foods";
 import { todayString } from "@/lib/date";
 import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
-import { StatusNutrition } from "@/features/status/nutrition";
 
 function macroProgress(consumed: number, target: number) {
   return target > 0 ? Math.max(0, Math.min(consumed / target, 1)) : 0;
@@ -70,12 +69,12 @@ export function NutritionPage() {
         }}
       />
 
-      <StatusNutrition nutrition={data.totals} />
+      {/* <StatusNutrition nutrition={data.totals} /> */}
 
-      <SectionStat
-        label="Today"
-        value={`${data.totals.calories.consumed} / ${data.totals.calories.target} KCAL`}
-      />
+      {/* <SectionStat */}
+      {/*   label="Today" */}
+      {/*   value={`${data.totals.calories.consumed} / ${data.totals.calories.target} KCAL`} */}
+      {/* /> */}
 
       <SectionStat label="Meals">
         <Button size="sm" variant="outline" className="mb-3" onClick={openAddDrawer}>
