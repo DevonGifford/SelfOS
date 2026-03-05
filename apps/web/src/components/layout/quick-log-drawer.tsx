@@ -29,7 +29,7 @@ const SNAP_POINTS = ["16rem", "26rem"];
 
 const DOMAIN_LINKS = [
   { to: "/habits", label: "Habits", icon: ClipboardList },
-  { to: "/measurements", label: "Measurements", icon: Scale },
+  { to: "/measurements?action=add", label: "Measurements", icon: Scale },
   { to: "/training", label: "Training", icon: Dumbbell },
 ];
 
