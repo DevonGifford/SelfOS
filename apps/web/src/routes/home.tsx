@@ -1,7 +1,7 @@
 import { Header } from "@/components/ui/header";
+import { WeightSparkline } from "@/features/measurements/weight-sparkline";
 import { StatusHeatmap } from "@/features/status/heatmap";
 import { StatusLastSession } from "@/features/status/last-session";
-import { StatusLineChart } from "@/features/status/line-chart";
 import { StatusNutrition } from "@/features/status/nutrition";
 import { useStatus } from "@/features/status/use-status";
 import { SESSION_TYPE_LABEL } from "@/features/training/labels";
@@ -67,7 +67,11 @@ export function HomePage() {
         unfinishedSession={data.status.training.unfinishedSession}
       />
 
-      <StatusLineChart entries={data.dailyMinimums} />
+      {data.dailyMinimums.length > 0 && (
+        <section className="mt-8 border-t pt-4">
+          <WeightSparkline entries={data.dailyMinimums} showStats />
+        </section>
+      )}
 
       <StatusHeatmap entries={data.habitsHistory} />
     </div>

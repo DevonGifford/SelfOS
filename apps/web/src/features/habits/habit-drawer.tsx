@@ -20,7 +20,6 @@ export function HabitDrawer({ open, onOpenChange, habit, habits }: HabitDrawerPr
   const isEdit = habit !== undefined;
 
   const [name, setName] = useState(habit?.name ?? "");
-  const [active, setActive] = useState(habit?.active ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const createMutation = useCreateHabit();
@@ -29,13 +28,7 @@ export function HabitDrawer({ open, onOpenChange, habit, habits }: HabitDrawerPr
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    const nameErrors = validateName(name);
-    const activeCount = habits.filter((h) => h.active).length;
-    const activeErrors = isEdit
-      ? validateActiveChange(active, habit.active, activeCount)
-      : {};
-    const validationErrors = { ...nameErrors, ...activeErrors };
-
+    const validationErrors = validateName(name);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -49,7 +42,7 @@ export function HabitDrawer({ open, onOpenChange, habit, habits }: HabitDrawerPr
 
     if (isEdit) {
       updateMutation.mutate(
-        { id: habit.id, input: { name, active } },
+        { id: habit.id, input: { name } },
         { onError: onMutationError, onSuccess: () => onOpenChange(false) },
       );
     } else {
@@ -58,6 +51,26 @@ export function HabitDrawer({ open, onOpenChange, habit, habits }: HabitDrawerPr
         onSuccess: () => onOpenChange(false),
       });
     }
+  }
+
+  // Same path the Edit Habits row's quick-archive action uses (validate,
+  // then updateMutation with active:false) — there's no reactivation
+  // surface anywhere in the app, so this is a one-way action, not a toggle
+  // riding along with Save.
+  function handleArchive() {
+    if (!isEdit) return;
+
+    const activeCount = habits.filter((h) => h.active).length;
+    const activeErrors = validateActiveChange(false, habit.active, activeCount);
+    if (activeErrors.active) {
+      setErrors(activeErrors);
+      return;
+    }
+
+    updateMutation.mutate(
+      { id: habit.id, input: { active: false } },
+      { onSuccess: () => onOpenChange(false) },
+    );
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -85,18 +98,19 @@ export function HabitDrawer({ open, onOpenChange, habit, habits }: HabitDrawerPr
               className="mt-1 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
             />
             {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
+            {isEdit && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Renaming updates this habit&rsquo;s label. For a genuinely different habit, archive
+                this one and create a new habit instead.
+              </p>
+            )}
           </div>
 
           {isEdit && (
             <div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={(event) => setActive(event.target.checked)}
-                />
-                Active
-              </label>
+              <Button type="button" variant="destructive" size="sm" onClick={handleArchive} disabled={isSaving}>
+                Archive habit
+              </Button>
               {errors.active && <p className="mt-1 text-xs text-destructive">{errors.active}</p>}
             </div>
           )}
