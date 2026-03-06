@@ -38,13 +38,13 @@ select * from food_entries
 where id = $1;
 
 -- name: CreateFoodEntry :one
-insert into food_entries (food_id, name, quantity, calories, protein, carbs, fat, date)
-values ($1, $2, $3, $4, $5, $6, $7, $8)
+insert into food_entries (food_id, name, quantity, calories, protein, carbs, fat, date, meal_slot)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 returning *;
 
 -- name: UpdateFoodEntryQuantity :one
 update food_entries
-set quantity = $2, calories = $3, protein = $4, carbs = $5, fat = $6
+set quantity = $2, calories = $3, protein = $4, carbs = $5, fat = $6, meal_slot = $7
 where id = $1
 returning *;
 
