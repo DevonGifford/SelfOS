@@ -3,6 +3,7 @@ import { WeightSparkline } from "@/features/measurements/weight-sparkline";
 import { StatusHeatmap } from "@/features/status/heatmap";
 import { StatusLastSession } from "@/features/status/last-session";
 import { StatusNutrition } from "@/features/status/nutrition";
+import { StatusSection } from "@/features/status/status-section";
 import { useStatus } from "@/features/status/use-status";
 import { SESSION_TYPE_LABEL } from "@/features/training/labels";
 
@@ -39,7 +40,7 @@ export function HomePage() {
         subtitle={<span className="italic">{daysRemaining} days remaining</span>}
         note={
           <p className="font-mono text-xs italic font-thin text-muted-foreground">
-            todo/ either quote or warning message
+            todo/ either quote or warning
           </p>
         }
         primary={{
@@ -68,9 +69,9 @@ export function HomePage() {
       />
 
       {data.dailyMinimums.length > 0 && (
-        <section className="mt-8 border-t pt-4">
-          <WeightSparkline entries={data.dailyMinimums} showStats />
-        </section>
+        <StatusSection title="30-day trend" className="mt-4">
+          <WeightSparkline entries={data.dailyMinimums} showStats showLabel={false} />
+        </StatusSection>
       )}
 
       <StatusHeatmap entries={data.habitsHistory} />

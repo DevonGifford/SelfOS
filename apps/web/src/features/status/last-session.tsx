@@ -4,6 +4,7 @@ import { SESSION_TYPE_LABEL } from "@/features/training/labels";
 import { useSessionExercises } from "@/features/training/use-session-exercises";
 import { useSessionSets } from "@/features/training/use-workout-sets";
 import { summarizeSessionSets } from "@/features/status/summarize-session-sets";
+import { StatusSection } from "@/features/status/status-section";
 import type { SessionWorkoutType } from "@/data/schemas/training-shared";
 
 type StatusLastSessionProps = {
@@ -72,34 +73,30 @@ function LastSessionStats({ sessionId }: { sessionId: string }) {
   );
 }
 
+// "Last workout" stays the static heading, same style as every other
+// StatusSection — only the derived workout type + date moves onto a muted
+// subtitle line beneath it. The resume banner is a call-to-action, not
+// status to hide, so it stays outside the collapsible, always visible.
 export function StatusLastSession({ lastFinishedSession, unfinishedSession }: StatusLastSessionProps) {
-  return (
-    <section className="mt-8 border-t pt-2">
-      <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Training</h2>
+  const subtitle = !lastFinishedSession
+    ? "No workouts logged yet"
+    : `${SESSION_TYPE_LABEL[lastFinishedSession.workoutType]} · ${formatRelativeDate(lastFinishedSession.date)}`;
 
+  return (
+    <div className="mt-2">
       {unfinishedSession ? (
         <Link
           to="/training"
-          className="mt-2 flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium"
+          className="mb-2 flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium"
         >
           Resume {SESSION_TYPE_LABEL[unfinishedSession.workoutType]} workout
           <span aria-hidden>→</span>
         </Link>
       ) : null}
 
-      {!lastFinishedSession ? (
-        <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-          No workouts logged yet
-        </p>
-      ) : (
-        <>
-          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Last workout: {SESSION_TYPE_LABEL[lastFinishedSession.workoutType]} ·{" "}
-            {formatRelativeDate(lastFinishedSession.date)}
-          </p>
-          <LastSessionStats sessionId={lastFinishedSession.id} />
-        </>
-      )}
-    </section>
+      <StatusSection title="Last workout" subtitle={subtitle} bordered={!unfinishedSession}>
+        {lastFinishedSession ? <LastSessionStats sessionId={lastFinishedSession.id} /> : null}
+      </StatusSection>
+    </div>
   );
 }

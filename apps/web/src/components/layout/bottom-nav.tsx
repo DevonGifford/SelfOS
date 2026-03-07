@@ -55,7 +55,7 @@ export function BottomNav() {
             className="flex flex-1 flex-col items-center justify-center py-3 text-muted-foreground transition-colors"
           >
             <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Plus className="size-5" />
+              <Plus className="size-6" />
             </span>
           </button>
         </nav>

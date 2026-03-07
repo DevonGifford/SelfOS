@@ -4,14 +4,17 @@ type WeightSparklineProps = {
   entries: Weight;
   days?: number;
   showStats?: boolean;
+  showLabel?: boolean;
 };
 
 // A glanceable, axis-free trend indicator — deliberately not the full
 // LineChartStatus treatment (ticket 03: chosen over duplicating that chart
 // here, which read as heavier than this page needs). Home reuses this same
 // component via `showStats` rather than maintaining a second implementation
-// of the same 30-day weight trend.
-export function WeightSparkline({ entries, days = 30, showStats = false }: WeightSparklineProps) {
+// of the same 30-day weight trend. `showLabel` defaults true (Measurements'
+// own usage); Home passes false since its StatusSection wrapper already
+// supplies the "30-day trend" label as the collapsible section's title.
+export function WeightSparkline({ entries, days = 30, showStats = false, showLabel = true }: WeightSparklineProps) {
   const windowed = entries.slice(-days);
   if (windowed.length === 0) return null;
 
@@ -32,17 +35,17 @@ export function WeightSparkline({ entries, days = 30, showStats = false }: Weigh
   const range = max - min || 1;
   const points = hasTrend
     ? values
-        .map((v, i) => {
-          const x = (i / (values.length - 1)) * width;
-          const y = height - ((v - min) / range) * height;
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-        .join(" ")
+      .map((v, i) => {
+        const x = (i / (values.length - 1)) * width;
+        const y = height - ((v - min) / range) * height;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ")
     : "";
 
   return (
-    <section className="mb-6">
-      <p className="font-mono text-xs uppercase text-muted-foreground">{days}-day trend</p>
+    <section className="mb-2">
+      {showLabel && <p className="font-mono text-xs uppercase text-muted-foreground">{days}-day trend</p>}
 
       {hasTrend && (
         <svg viewBox={`0 0 ${width} ${height}`} className="mt-1 h-8 w-full text-primary" preserveAspectRatio="none">
