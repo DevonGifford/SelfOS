@@ -37,6 +37,7 @@ type FoodEntryResponse struct {
 	Fat       float64 `json:"fat"`
 	Date      string  `json:"date"`
 	CreatedAt string  `json:"createdAt"`
+	MealSlot  string  `json:"mealSlot"`
 }
 
 // CreateFoodRequest is the JSON body accepted for POST /api/foods.
@@ -61,18 +62,39 @@ type UpdateFoodRequest struct {
 }
 
 // CreateFoodEntryRequest is the JSON body accepted for POST
-// /api/food-entries. Macros are never submitted by the client — the
-// handler computes them from the referenced Food's per-serving values.
+// /api/food-entries. The four macro fields are optional, mirroring
+// UpdateFoodEntryRequest: omitted (or any one missing), the handler
+// computes them from the referenced Food's per-serving rate (original
+// behavior); all four present, the handler uses them as-is — the Add
+// flow's manual macro adjustment, resolved client-side before the entry
+// exists.
 type CreateFoodEntryRequest struct {
-	FoodID   string  `json:"foodId"`
-	Quantity float64 `json:"quantity"`
-	Date     string  `json:"date"`
+	FoodID   string   `json:"foodId"`
+	Quantity float64  `json:"quantity"`
+	Date     string   `json:"date"`
+	MealSlot string   `json:"mealSlot"`
+	Calories *float64 `json:"calories,omitempty"`
+	Protein  *float64 `json:"protein,omitempty"`
+	Carbs    *float64 `json:"carbs,omitempty"`
+	Fat      *float64 `json:"fat,omitempty"`
 }
 
 // UpdateFoodEntryRequest is the JSON body accepted for PATCH
-// /api/food-entries/{id} — quantity only.
+// /api/food-entries/{id}. Quantity is always required. The four macro
+// fields are optional: omitted (or any one missing), the handler
+// recomputes all four from the live Food's per-serving rate (original
+// behavior); all four present, the handler uses them as-is — a manual
+// override that needs no live Food, so it also works on an entry whose
+// Food has since been deleted. MealSlot is optional: omitted, the entry
+// keeps its current slot; present, it's changed (e.g. correcting a
+// breakfast that should've been a snack).
 type UpdateFoodEntryRequest struct {
-	Quantity float64 `json:"quantity"`
+	Quantity float64  `json:"quantity"`
+	Calories *float64 `json:"calories,omitempty"`
+	Protein  *float64 `json:"protein,omitempty"`
+	Carbs    *float64 `json:"carbs,omitempty"`
+	Fat      *float64 `json:"fat,omitempty"`
+	MealSlot *string  `json:"mealSlot,omitempty"`
 }
 
 func toFoodResponse(f database.Food) (FoodResponse, error) {
@@ -158,6 +180,7 @@ func toFoodEntryResponse(e database.FoodEntry) (FoodEntryResponse, error) {
 		Fat:       fat.Float64,
 		Date:      e.Date.Time.Format(dateLayout),
 		CreatedAt: e.CreatedAt.Time.Format(time.RFC3339),
+		MealSlot:  e.MealSlot,
 	}, nil
 }
 

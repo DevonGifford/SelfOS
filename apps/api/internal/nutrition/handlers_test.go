@@ -199,6 +199,7 @@ func TestCreateEntryComputesMacrosServerSide(t *testing.T) {
 		FoodID:   food.ID,
 		Quantity: 1.5,
 		Date:     "2026-09-14",
+		MealSlot: "breakfast",
 	})
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
@@ -216,6 +217,31 @@ func TestCreateEntryComputesMacrosServerSide(t *testing.T) {
 	}
 }
 
+func TestCreateEntryWithManualMacroOverrides(t *testing.T) {
+	h := testHandler(t)
+
+	food := createFood(t, h, "Oats & berries")
+
+	calories, protein, carbs, fat := 500.0, 30.0, 40.0, 20.0
+	rec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{
+		FoodID: food.ID, Quantity: 1.5, Date: "2026-09-14", MealSlot: "dinner",
+		Calories: &calories, Protein: &protein, Carbs: &carbs, Fat: &fat,
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var entry FoodEntryResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &entry); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	// Explicit overrides must be stored as-is, NOT recomputed from the
+	// food's per-serving rate (1.5 * 420 = 630, not 500).
+	if entry.Quantity != 1.5 || entry.Calories != 500 || entry.Protein != 30 || entry.Carbs != 40 || entry.Fat != 20 {
+		t.Fatalf("expected explicit overrides to be stored as-is, got %+v", entry)
+	}
+}
+
 func TestCreateEntryUnknownFoodRejected(t *testing.T) {
 	h := testHandler(t)
 
@@ -223,6 +249,7 @@ func TestCreateEntryUnknownFoodRejected(t *testing.T) {
 		FoodID:   "00000000-0000-0000-0000-000000000000",
 		Quantity: 1,
 		Date:     "2026-09-14",
+		MealSlot: "breakfast",
 	})
 	if rec.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("expected 422, got %d: %s", rec.Code, rec.Body.String())
@@ -237,7 +264,7 @@ func TestCreateEntryFutureDateRejected(t *testing.T) {
 	food := createFood(t, h, "Oats & berries")
 
 	rec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{
-		FoodID: food.ID, Quantity: 1, Date: "2099-01-01",
+		FoodID: food.ID, Quantity: 1, Date: "2099-01-01", MealSlot: "breakfast",
 	})
 	if rec.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("expected 422, got %d: %s", rec.Code, rec.Body.String())
@@ -248,8 +275,8 @@ func TestListEntries(t *testing.T) {
 	h := testHandler(t)
 	food := createFood(t, h, "Oats & berries")
 
-	doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14"})
-	doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 2, Date: "2026-09-13"})
+	doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
+	doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 2, Date: "2026-09-13", MealSlot: "dinner"})
 
 	rec := doRequest(h, http.MethodGet, "/api/food-entries", nil)
 	var entries []FoodEntryResponse
@@ -265,7 +292,7 @@ func TestUpdateEntryQuantityRecomputesMacros(t *testing.T) {
 	h := testHandler(t)
 	food := createFood(t, h, "Oats & berries")
 
-	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14"})
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
 	var entry FoodEntryResponse
 	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
 		t.Fatalf("decode create: %v", err)
@@ -285,11 +312,144 @@ func TestUpdateEntryQuantityRecomputesMacros(t *testing.T) {
 	}
 }
 
+func TestUpdateEntryMealSlot(t *testing.T) {
+	h := testHandler(t)
+	food := createFood(t, h, "Oats & berries")
+
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
+	var entry FoodEntryResponse
+	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
+
+	snack := "snack"
+	rec := doRequest(h, http.MethodPatch, "/api/food-entries/"+entry.ID, UpdateFoodEntryRequest{Quantity: 1, MealSlot: &snack})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var updated FoodEntryResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if updated.MealSlot != "snack" {
+		t.Fatalf("expected mealSlot snack, got %+v", updated)
+	}
+
+	// Omitting mealSlot entirely (the existing quantity-only shape) must
+	// keep whatever slot the entry currently has, not reset it.
+	rec = doRequest(h, http.MethodPatch, "/api/food-entries/"+entry.ID, UpdateFoodEntryRequest{Quantity: 2})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if updated.MealSlot != "snack" {
+		t.Fatalf("expected mealSlot to remain snack when omitted, got %+v", updated)
+	}
+}
+
+func TestUpdateEntryRequiresValidMealSlot(t *testing.T) {
+	h := testHandler(t)
+	food := createFood(t, h, "Oats & berries")
+
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
+	var entry FoodEntryResponse
+	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
+
+	brunch := "brunch"
+	rec := doRequest(h, http.MethodPatch, "/api/food-entries/"+entry.ID, UpdateFoodEntryRequest{Quantity: 1, MealSlot: &brunch})
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected 422, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestUpdateEntryWithManualMacroOverrides(t *testing.T) {
+	h := testHandler(t)
+	food := createFood(t, h, "Oats & berries")
+
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
+	var entry FoodEntryResponse
+	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
+
+	calories, protein, carbs, fat := 500.0, 30.0, 40.0, 20.0
+	rec := doRequest(h, http.MethodPatch, "/api/food-entries/"+entry.ID, UpdateFoodEntryRequest{
+		Quantity: 1.5, Calories: &calories, Protein: &protein, Carbs: &carbs, Fat: &fat,
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var updated FoodEntryResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	// Explicit overrides must be stored as-is, NOT recomputed from the
+	// food's per-serving rate (1.5 * 420 = 630, not 500).
+	if updated.Quantity != 1.5 || updated.Calories != 500 || updated.Protein != 30 || updated.Carbs != 40 || updated.Fat != 20 {
+		t.Fatalf("expected explicit overrides to be stored as-is, got %+v", updated)
+	}
+}
+
+func TestUpdateEntryOrphanedWithManualOverridesSucceeds(t *testing.T) {
+	h := testHandler(t)
+	food := createFood(t, h, "Oats & berries")
+
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
+	var entry FoodEntryResponse
+	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
+
+	deleteRec := doRequest(h, http.MethodDelete, "/api/foods/"+food.ID, nil)
+	if deleteRec.Code != http.StatusNoContent {
+		t.Fatalf("setup: expected 204 deleting food, got %d", deleteRec.Code)
+	}
+
+	// Unlike the quantity-only path (TestUpdateEntryAfterFoodDeletedRejected),
+	// explicit macro overrides need no live Food, so this succeeds.
+	calories, protein, carbs, fat := 300.0, 15.0, 20.0, 5.0
+	rec := doRequest(h, http.MethodPatch, "/api/food-entries/"+entry.ID, UpdateFoodEntryRequest{
+		Quantity: 1, Calories: &calories, Protein: &protein, Carbs: &carbs, Fat: &fat,
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var updated FoodEntryResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if updated.Calories != 300 || updated.FoodID != nil {
+		t.Fatalf("unexpected response: %+v", updated)
+	}
+}
+
+func TestCreateEntryRequiresValidMealSlot(t *testing.T) {
+	h := testHandler(t)
+	food := createFood(t, h, "Oats & berries")
+
+	rec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{
+		FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "brunch",
+	})
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected 422, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if _, ok := decodeErrors(t, rec)["mealSlot"]; !ok {
+		t.Fatalf("expected error on field mealSlot, got %v", decodeErrors(t, rec))
+	}
+}
+
 func TestUpdateEntryAfterFoodDeletedRejected(t *testing.T) {
 	h := testHandler(t)
 	food := createFood(t, h, "Oats & berries")
 
-	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14"})
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
 	var entry FoodEntryResponse
 	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
 		t.Fatalf("decode create: %v", err)
@@ -321,7 +481,7 @@ func TestDeleteEntry(t *testing.T) {
 	h := testHandler(t)
 	food := createFood(t, h, "Oats & berries")
 
-	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14"})
+	createRec := doRequest(h, http.MethodPost, "/api/food-entries", CreateFoodEntryRequest{FoodID: food.ID, Quantity: 1, Date: "2026-09-14", MealSlot: "breakfast"})
 	var entry FoodEntryResponse
 	if err := json.Unmarshal(createRec.Body.Bytes(), &entry); err != nil {
 		t.Fatalf("decode create: %v", err)

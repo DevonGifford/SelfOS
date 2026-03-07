@@ -246,6 +246,10 @@ func (h *Handler) createEntry(w http.ResponseWriter, r *http.Request) {
 		writeErrors(w, http.StatusUnprocessableEntity, errs)
 		return
 	}
+	if errs := validateMealSlot(req.MealSlot); len(errs) > 0 {
+		writeErrors(w, http.StatusUnprocessableEntity, errs)
+		return
+	}
 
 	foodID, err := parseUUID(req.FoodID)
 	if err != nil {
@@ -269,10 +273,22 @@ func (h *Handler) createEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := computeMacros(food, req.Quantity)
-	if err != nil {
-		writeInternalError(w, err)
-		return
+	var m macros
+	if req.Calories != nil && req.Protein != nil && req.Carbs != nil && req.Fat != nil {
+		// Manual override: the client already resolved final absolute
+		// values (quantity-scaled base plus any per-macro nudge) — use
+		// them directly rather than recomputing from the Food's rate.
+		m, err = toMacros(req.Quantity, *req.Calories, *req.Protein, *req.Carbs, *req.Fat)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
+	} else {
+		m, err = computeMacros(food, req.Quantity)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
 	}
 
 	row, err := h.queries.CreateFoodEntry(r.Context(), database.CreateFoodEntryParams{
@@ -284,6 +300,7 @@ func (h *Handler) createEntry(w http.ResponseWriter, r *http.Request) {
 		Carbs:    m.carbs,
 		Fat:      m.fat,
 		Date:     date,
+		MealSlot: req.MealSlot,
 	})
 	if err != nil {
 		writeInternalError(w, err)
@@ -360,6 +377,42 @@ func computeMacros(food database.Food, quantity float64) (macros, error) {
 	}, nil
 }
 
+// toMacros converts explicit client-supplied values into a macros struct —
+// the manual-override counterpart to computeMacros, used when the caller
+// has already resolved final numbers (e.g. quantity-scaled base plus a
+// per-macro nudge) rather than asking the server to derive them from a
+// live Food.
+func toMacros(quantity, calories, protein, carbs, fat float64) (macros, error) {
+	quantityNumeric, err := toNumeric(quantity)
+	if err != nil {
+		return macros{}, err
+	}
+	caloriesNumeric, err := toNumeric(calories)
+	if err != nil {
+		return macros{}, err
+	}
+	proteinNumeric, err := toNumeric(protein)
+	if err != nil {
+		return macros{}, err
+	}
+	carbsNumeric, err := toNumeric(carbs)
+	if err != nil {
+		return macros{}, err
+	}
+	fatNumeric, err := toNumeric(fat)
+	if err != nil {
+		return macros{}, err
+	}
+
+	return macros{
+		quantity: quantityNumeric,
+		calories: caloriesNumeric,
+		protein:  proteinNumeric,
+		carbs:    carbsNumeric,
+		fat:      fatNumeric,
+	}, nil
+}
+
 func (h *Handler) updateEntry(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUID(r.PathValue("id"))
 	if err != nil {
@@ -388,25 +441,49 @@ func (h *Handler) updateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The Food this entry snapshot came from is gone (decision 14) — can't
-	// recompute a rate that no longer exists. Delete and re-create instead.
-	if !entry.FoodID.Valid {
-		writeErrors(w, http.StatusUnprocessableEntity, map[string]string{
-			"quantity": "original food no longer exists — delete and re-log this entry instead",
-		})
-		return
+	mealSlot := entry.MealSlot
+	if req.MealSlot != nil {
+		if errs := validateMealSlot(*req.MealSlot); len(errs) > 0 {
+			writeErrors(w, http.StatusUnprocessableEntity, errs)
+			return
+		}
+		mealSlot = *req.MealSlot
 	}
 
-	food, err := h.queries.GetFood(r.Context(), entry.FoodID)
-	if err != nil {
-		writeInternalError(w, err)
-		return
-	}
+	var m macros
+	if req.Calories != nil && req.Protein != nil && req.Carbs != nil && req.Fat != nil {
+		// Manual override: the client already resolved final absolute
+		// values (quantity-scaled base plus any per-macro nudge) — use
+		// them directly. No live Food needed, so this also works on an
+		// entry whose Food has since been deleted.
+		m, err = toMacros(req.Quantity, *req.Calories, *req.Protein, *req.Carbs, *req.Fat)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
+	} else {
+		// Original behavior, unchanged: recompute from the live Food. The
+		// Food this entry snapshot came from is gone (decision 14) — can't
+		// recompute a rate that no longer exists. Delete and re-create
+		// instead (or resubmit with explicit macro overrides, above).
+		if !entry.FoodID.Valid {
+			writeErrors(w, http.StatusUnprocessableEntity, map[string]string{
+				"quantity": "original food no longer exists — delete and re-log this entry instead",
+			})
+			return
+		}
 
-	m, err := computeMacros(food, req.Quantity)
-	if err != nil {
-		writeInternalError(w, err)
-		return
+		food, err := h.queries.GetFood(r.Context(), entry.FoodID)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
+
+		m, err = computeMacros(food, req.Quantity)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
 	}
 
 	row, err := h.queries.UpdateFoodEntryQuantity(r.Context(), database.UpdateFoodEntryQuantityParams{
@@ -416,6 +493,7 @@ func (h *Handler) updateEntry(w http.ResponseWriter, r *http.Request) {
 		Protein:  m.protein,
 		Carbs:    m.carbs,
 		Fat:      m.fat,
+		MealSlot: mealSlot,
 	})
 	if err != nil {
 		writeInternalError(w, err)
