@@ -16,7 +16,7 @@ import {
 } from "@/data/data-demo/workout-templates";
 import type { Configuration } from "@/data/schemas/configuration";
 import type { Exercise } from "@/data/schemas/exercises";
-import type { FoodEntry } from "@/data/schemas/food-entries";
+import type { FoodEntry, MealSlot } from "@/data/schemas/food-entries";
 import type { Food } from "@/data/schemas/foods";
 import type { HabitEntry } from "@/data/schemas/habit-entries";
 import type { Habit } from "@/data/schemas/habits";
@@ -177,41 +177,87 @@ export async function createFoodEntry(input: {
   foodId: string;
   quantity: number;
   date: string;
+  mealSlot: MealSlot;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 }): Promise<FoodEntry> {
   const food = foods.find((f) => f.id === input.foodId);
   if (!food) throw new Error(`guest-client: unknown food ${input.foodId}`);
+
+  const hasOverrides =
+    input.calories !== undefined &&
+    input.protein !== undefined &&
+    input.carbs !== undefined &&
+    input.fat !== undefined;
 
   const created: FoodEntry = {
     id: guestId(),
     foodId: food.id,
     name: food.name,
     quantity: input.quantity,
-    calories: Math.round(food.caloriesPerServing * input.quantity),
-    protein: Math.round(food.proteinPerServing * input.quantity),
-    carbs: Math.round(food.carbsPerServing * input.quantity),
-    fat: Math.round(food.fatPerServing * input.quantity),
+    calories: hasOverrides ? input.calories! : Math.round(food.caloriesPerServing * input.quantity),
+    protein: hasOverrides ? input.protein! : Math.round(food.proteinPerServing * input.quantity),
+    carbs: hasOverrides ? input.carbs! : Math.round(food.carbsPerServing * input.quantity),
+    fat: hasOverrides ? input.fat! : Math.round(food.fatPerServing * input.quantity),
     date: input.date,
     createdAt: new Date().toISOString(),
+    mealSlot: input.mealSlot,
   };
   foodEntries = [...foodEntries, created];
   return created;
 }
 
-export async function updateFoodEntry(id: string, quantity: number): Promise<FoodEntry> {
+export async function updateFoodEntry(
+  id: string,
+  input: {
+    quantity: number;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    mealSlot?: MealSlot;
+  },
+): Promise<FoodEntry> {
   const existing = foodEntries.find((e) => e.id === id);
   if (!existing) throw new Error(`guest-client: unknown food entry ${id}`);
+
+  const mealSlot = input.mealSlot ?? existing.mealSlot;
+
+  // Manual overrides supplied (all four) — use them directly, no Food
+  // lookup needed, matching the real API's behavior.
+  if (
+    input.calories !== undefined &&
+    input.protein !== undefined &&
+    input.carbs !== undefined &&
+    input.fat !== undefined
+  ) {
+    const updated: FoodEntry = {
+      ...existing,
+      quantity: input.quantity,
+      calories: input.calories,
+      protein: input.protein,
+      carbs: input.carbs,
+      fat: input.fat,
+      mealSlot,
+    };
+    foodEntries = foodEntries.map((e) => (e.id === id ? updated : e));
+    return updated;
+  }
 
   const food = existing.foodId ? foods.find((f) => f.id === existing.foodId) : undefined;
   const updated: FoodEntry = food
     ? {
         ...existing,
-        quantity,
-        calories: Math.round(food.caloriesPerServing * quantity),
-        protein: Math.round(food.proteinPerServing * quantity),
-        carbs: Math.round(food.carbsPerServing * quantity),
-        fat: Math.round(food.fatPerServing * quantity),
+        quantity: input.quantity,
+        calories: Math.round(food.caloriesPerServing * input.quantity),
+        protein: Math.round(food.proteinPerServing * input.quantity),
+        carbs: Math.round(food.carbsPerServing * input.quantity),
+        fat: Math.round(food.fatPerServing * input.quantity),
+        mealSlot,
       }
-    : { ...existing, quantity };
+    : { ...existing, quantity: input.quantity, mealSlot };
 
   foodEntries = foodEntries.map((e) => (e.id === id ? updated : e));
   return updated;

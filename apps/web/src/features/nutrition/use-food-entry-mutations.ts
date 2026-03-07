@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { toastManager } from "@/components/ui/toast";
 import { createFoodEntry, deleteFoodEntry, updateFoodEntry } from "@/data/client";
-import type { FoodEntries } from "@/data/schemas/food-entries";
+import type { FoodEntries, MealSlot } from "@/data/schemas/food-entries";
 
 const ENTRIES_KEY = ["food-entries"];
 
@@ -19,7 +19,16 @@ export function useCreateFoodEntry() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: { foodId: string; quantity: number; date: string }) => createFoodEntry(input),
+    mutationFn: (input: {
+      foodId: string;
+      quantity: number;
+      date: string;
+      mealSlot: MealSlot;
+      calories?: number;
+      protein?: number;
+      carbs?: number;
+      fat?: number;
+    }) => createFoodEntry(input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: ENTRIES_KEY });
       const previous = queryClient.getQueryData<FoodEntries>(ENTRIES_KEY);
@@ -29,12 +38,13 @@ export function useCreateFoodEntry() {
         foodId: input.foodId,
         name: "…",
         quantity: input.quantity,
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
+        calories: input.calories ?? 0,
+        protein: input.protein ?? 0,
+        carbs: input.carbs ?? 0,
+        fat: input.fat ?? 0,
         date: input.date,
         createdAt: new Date().toISOString(),
+        mealSlot: input.mealSlot,
       };
       queryClient.setQueryData<FoodEntries>(ENTRIES_KEY, (old) => [...(old ?? []), optimistic]);
       return { previous, optimisticId };
@@ -70,17 +80,39 @@ export function useCreateFoodEntry() {
   });
 }
 
+type UpdateFoodEntryInput = {
+  id: string;
+  quantity: number;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  mealSlot?: MealSlot;
+};
+
 export function useUpdateFoodEntry() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, quantity }: { id: string; quantity: number }) => updateFoodEntry(id, quantity),
-    onMutate: async ({ id, quantity }) => {
+    mutationFn: ({ id, ...input }: UpdateFoodEntryInput) => updateFoodEntry(id, input),
+    onMutate: async ({ id, quantity, calories, protein, carbs, fat, mealSlot }) => {
       await queryClient.cancelQueries({ queryKey: ENTRIES_KEY });
       const previous = queryClient.getQueryData<FoodEntries>(ENTRIES_KEY);
       const previousEntry = previous?.find((entry) => entry.id === id);
       queryClient.setQueryData<FoodEntries>(ENTRIES_KEY, (old) =>
-        (old ?? []).map((entry) => (entry.id === id ? { ...entry, quantity } : entry)),
+        (old ?? []).map((entry) =>
+          entry.id === id
+            ? {
+                ...entry,
+                quantity,
+                ...(calories !== undefined && { calories }),
+                ...(protein !== undefined && { protein }),
+                ...(carbs !== undefined && { carbs }),
+                ...(fat !== undefined && { fat }),
+                ...(mealSlot !== undefined && { mealSlot }),
+              }
+            : entry,
+        ),
       );
       return { previous, previousEntry };
     },
@@ -102,7 +134,14 @@ export function useUpdateFoodEntry() {
         actionProps: {
           children: "UNDO",
           onClick: () => {
-            updateFoodEntry(updated.id, previousEntry.quantity)
+            updateFoodEntry(updated.id, {
+              quantity: previousEntry.quantity,
+              calories: previousEntry.calories,
+              protein: previousEntry.protein,
+              carbs: previousEntry.carbs,
+              fat: previousEntry.fat,
+              mealSlot: previousEntry.mealSlot,
+            })
               .then((restored) => {
                 queryClient.setQueryData<FoodEntries>(ENTRIES_KEY, (old) =>
                   (old ?? []).map((entry) => (entry.id === restored.id ? restored : entry)),
@@ -150,6 +189,7 @@ export function useDeleteFoodEntry() {
               foodId: deletedEntry.foodId!,
               quantity: deletedEntry.quantity,
               date: deletedEntry.date,
+              mealSlot: deletedEntry.mealSlot,
             })
               .then((restored) => {
                 queryClient.setQueryData<FoodEntries>(ENTRIES_KEY, (old) => [...(old ?? []), restored]);
