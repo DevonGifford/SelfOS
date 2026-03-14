@@ -20,16 +20,10 @@ import { useReorderHabits, useUpdateHabit } from "@/features/habits/use-habit-mu
 import { useHabits } from "@/features/habits/use-habits";
 import { useToggleHabitEntry } from "@/features/habits/use-toggle-habit-entry";
 import { validateActiveChange } from "@/features/habits/validate";
-import { todayString } from "@/lib/date";
+import { dateWithOffset } from "@/lib/date";
 import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
 
 const MAX_DAYS_BACK = 7;
-
-function dateWithOffset(offset: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return todayString(d);
-}
 
 export function HabitsPage() {
   const habitsQuery = useHabits();

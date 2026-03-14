@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { EllipsisVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, EllipsisVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +20,10 @@ import { selectMealGroups } from "@/features/nutrition/select-meal-groups";
 import { useDeleteFoodEntry } from "@/features/nutrition/use-food-entry-mutations";
 import { useFoodEntries } from "@/features/nutrition/use-food-entries";
 import { useFoods } from "@/features/nutrition/use-foods";
-import { todayString } from "@/lib/date";
+import { dateWithOffset } from "@/lib/date";
 import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
+
+const MAX_DAYS_BACK = 7;
 
 function macroProgress(consumed: number, target: number) {
   return target > 0 ? Math.max(0, Math.min(consumed / target, 1)) : 0;
@@ -38,6 +40,7 @@ export function NutritionPage() {
   const [editingEntry, setEditingEntry] = useState<FoodEntry | undefined>(undefined);
   const [editOpen, setEditOpen] = useState(false);
   const [editKey, setEditKey] = useState(0);
+  const [dayOffset, setDayOffset] = useState(0);
 
   useOpenAddFromQuery(openAddDrawer);
 
@@ -45,10 +48,25 @@ export function NutritionPage() {
 
   const entries = entriesQuery.data;
   const foods = foodsQuery.data;
-  const today = todayString();
 
-  const data = selectDailyTotals(entries, today, selectNutritionTargets(configQuery.data));
-  const todaysEntries = entries.filter((entry) => entry.date === today);
+  const isToday = dayOffset === 0;
+  const viewedDate = dateWithOffset(dayOffset);
+  const dateLabel = new Date(`${viewedDate}T00:00:00`)
+    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+    .toUpperCase();
+
+  const data = selectDailyTotals(entries, viewedDate, selectNutritionTargets(configQuery.data));
+  const viewedEntries = entries.filter((entry) => entry.date === viewedDate);
+
+  function goToPrevDay() {
+    if (dayOffset <= -MAX_DAYS_BACK) return;
+    setDayOffset((o) => o - 1);
+  }
+
+  function goToNextDay() {
+    if (isToday) return;
+    setDayOffset((o) => o + 1);
+  }
 
   function openAddDrawer() {
     setAddOpen(true);
@@ -66,7 +84,7 @@ export function NutritionPage() {
       <Header
         eyebrow="SELF/OS"
         title="Nutrition"
-        subtitle="Today"
+        subtitle={isToday ? "Today" : dateLabel}
         primary={{
           label: "Calories",
           value: data.totals.calories.consumed.toLocaleString(),
@@ -84,9 +102,40 @@ export function NutritionPage() {
         }
       />
 
-      <SectionStat label="Today's Meals">
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={goToPrevDay}
+            disabled={dayOffset <= -MAX_DAYS_BACK}
+            aria-label="Previous day"
+          >
+            <ChevronLeft />
+          </Button>
+          <p className="font-mono text-xs uppercase text-muted-foreground">
+            {isToday ? "Today" : dateLabel}
+          </p>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={goToNextDay}
+            disabled={isToday}
+            aria-label="Next day"
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+        {!isToday && (
+          <Button size="xs" variant="ghost" onClick={() => setDayOffset(0)} aria-label="Jump to today">
+            Today
+          </Button>
+        )}
+      </div>
+
+      <SectionStat label="Meals">
         <div className="flex flex-col gap-4">
-          {selectMealGroups(todaysEntries).map((group) => (
+          {selectMealGroups(viewedEntries).map((group) => (
             <div key={group.slot}>
               <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 {group.label}
@@ -139,7 +188,7 @@ export function NutritionPage() {
         </div>
       </SectionStat>
 
-      <FoodDrawer key={addKey} open={addOpen} onOpenChange={setAddOpen} foods={foods} date={today} />
+      <FoodDrawer key={addKey} open={addOpen} onOpenChange={setAddOpen} foods={foods} date={viewedDate} />
 
       {editingEntry && (
         <EntryDrawer
