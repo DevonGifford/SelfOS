@@ -1,50 +1,40 @@
-<!-- Logo -->
-<pre align="center">
-███████╗███████╗██╗     ███████╗       ██████╗ ███████╗
-██╔════╝██╔════╝██║     ██╔════╝      ██╔═══██╗██╔════╝
-███████╗█████╗  ██║     █████╗        ██║   ██║███████╗
-╚════██║██╔══╝  ██║     ██╔══╝        ██║   ██║╚════██║
-███████║███████╗███████╗██║     █████╗╚██████╔╝███████║
-╚══════╝╚══════╝╚══════╝╚═╝     ╚════╝ ╚═════╝ ╚══════╝
-</pre>
-
-<!-- Introduction Text -->
 <div align="center">
-    <h2>
-       Personal data, owned by you.
-    </h2>
-      <a href="https://skillicons.dev">
-       <img src="https://skillicons.dev/icons?i=react,ts,tailwind,vite,go,postgres,docker,github" />
+  <!-- cover logo -->
+  <p align='center'>
+    <img src="docs/SelfOS-Logo.png" alt="Demo" title="DemoImage" height="350">
+  </p>
+  <!-- sub headline -->
+  <h2>
+     Personal data, owned by you.
+  </h2>
+  <!-- tech used in this project -->  
+  <p>
+    <a href="https://skillicons.dev">
+      <img src="https://skillicons.dev/icons?i=react,ts,tailwind,vite,go,postgres,docker,github" />
     </a>
-    <!-- <h3> -->
-    <!--   <span> -->
-    <!--       Demo Application (coming soon) -->
-    <!--   </span> -->
-    <!-- </h3> -->
+  </p>
+  <!-- demo link -->
+  <h5>
+      <a href='https://selfos-mu.vercel.app/', target='_blank'>
+          live demo ↗
+      <a/>
+  </h5>
 </div>
 
-<br/>
-<br/>
+<br>
+<!-- -------------------------------------------------------------------------- -->
 
-
-> [!WARNING]
-> **Work in progress.** SelfOS is under active development. The architecture, API surface & feature set are still evolving.
-
-### About This Project 🚀
-
+### About This Project
 ---
-
 SelfOS is a personal data system for tracking the numbers behind your life - training, nutrition, habits, measurements & eventually health data from the devices you already use.  The goal is simple: collect your own data, build a history of yourself and keep that data under your control. SelfOS is designed around a shared Go API & PostgreSQL backend, with multiple clients able to read from and contribute to the same personal record over time.
 
-Use [`QUICKSTART.md`](./docs/QUICKSTART.md) to get the project running locally, or see [`CONTEXT.md`](./CONTEXT.md) for architecture, conventions & development notes.
-
+> Use [`QUICKSTART.md`](./docs/QUICKSTART.md) to get the project running locally, or see [`CONTEXT.md`](./CONTEXT.md) for architecture, conventions & development notes.
 
 
 <br/>
 <br/>
 
 ### High-Level Architecture
-
 ---
 SelfOS is designed around a single backend API shared by multiple clients. The Web, Mobile & TRMNL clients all communicate with the Go API over HTTP, while the API owns validation, business logic, authentication and persistence. Frontends never talk directly to Postgres. This is the target architecture for the project.
 
@@ -65,10 +55,7 @@ SelfOS is designed around a single backend API shared by multiple clients. The W
                                                       └─────────────────────────────┘
 ```
                                                            
-
-
 #### Repository Structure
-
 The repository is intended to grow into a small multi-client monorepo, with deployable applications under `apps/`, reusable frontend code under `packages/` and database concerns kept separately under `database/`.  The structure below represents the intended direction of the project;
 
 ```text
