@@ -1,7 +1,7 @@
 <div align="center">
   <!-- cover logo -->
   <p align='center'>
-    <img src="docs/images/SelfOS-Logo-Small.png" alt="Demo" title="DemoImage" height="350">
+    <img src="docs/images/selfos-readme-banner.png" alt="Demo" title="DemoImage" height="250">
   </p>
   <!-- sub headline -->
   <h2>
