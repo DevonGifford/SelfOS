@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
-import { MeasurementDrawer } from "@/components/custom/measurement-drawer";
-import { WeightSparkline } from "@/components/custom/weight-sparkline";
 import { Button } from "@/components/ui/button";
 import { SectionStat } from "@/components/ui/section-stat";
 import { ApiError } from "@/data/api-client";
 import type { Weight, WeightEntry } from "@/data/schemas/weight";
+import { MeasurementDrawer } from "@/features/measurements/measurement-drawer";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
+import { WeightSparkline } from "@/features/measurements/weight-sparkline";
 
 const PAGE_SIZE = 30;
 

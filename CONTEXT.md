@@ -50,3 +50,6 @@ The end state where every domain has been migrated (see Client Seam) — the Cli
 
 **Undo**:
 A short client-side window immediately after an action (e.g. "82.4 KG LOGGED — UNDO"), not a database mechanism. All deletes are real deletes — there is no soft-delete/`deleted_at` anywhere in the schema.
+
+**Hooks + selectors**:
+The per-domain template under `features/<domain>/`: a `use-*.ts` hook is always a thin `useQuery` wrapper over the Client Seam with no logic of its own; a `select-*.ts` selector is always a pure, I/O-free derivation over already-fetched data (e.g. `selectDailyMinimums`), never a hook itself. A domain with nothing to derive simply has no selector yet — that's not a gap to fill preemptively. Components owned by a single domain (not generic, not shared) live flat alongside its hooks and selectors in the same `features/<domain>/` folder, not under `components/custom/`; ownership follows whichever feature is the component's sole consumer, not the shape of its props. `components/ui/` is reserved for components with zero domain knowledge.

@@ -1,6 +1,6 @@
 import type { CardioSession, StrengthSession, TrainingSession } from "@/data/schemas/training-history";
 
-type LastSessionStatusProps = {
+type StatusLastSessionProps = {
   session: TrainingSession | undefined;
   today: "push" | "pull" | "legs" | "cardio" | "rest";
 };
@@ -144,7 +144,7 @@ function CardioSummary({ session }: { session: CardioSession }) {
   );
 }
 
-export function LastSessionStatus({ session, today }: LastSessionStatusProps) {
+export function StatusLastSession({ session, today }: StatusLastSessionProps) {
   return (
     <section className="mt-8 border-t pt-2">
       <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Last Session</h2>

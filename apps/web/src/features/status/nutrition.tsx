@@ -3,11 +3,11 @@ import { Link } from "react-router";
 import { ProgressStat } from "@/components/ui/progress";
 import type { Status } from "@/data/schemas/status";
 
-type NutritionStatusProps = {
+type StatusNutritionProps = {
   nutrition: Status["nutrition"];
 };
 
-export function NutritionStatus({ nutrition }: NutritionStatusProps) {
+export function StatusNutrition({ nutrition }: StatusNutritionProps) {
   return (
     <Link to="/nutrition" className="mt-8 block space-y-4">
       <ProgressStat

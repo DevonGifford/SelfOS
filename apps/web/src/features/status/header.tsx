@@ -3,13 +3,13 @@ import { Link } from "react-router";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import type { Status } from "@/data/schemas/status";
 
-type HeaderStatusProps = {
+type StatusHeaderProps = {
   training: Status["training"];
   measurementsKg: number;
   habits: Status["habits"];
 };
 
-export function HeaderStatus({ training, measurementsKg, habits }: HeaderStatusProps) {
+export function StatusHeader({ training, measurementsKg, habits }: StatusHeaderProps) {
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
