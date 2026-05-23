@@ -5,12 +5,66 @@
 package database
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TokenScope string
+
+const (
+	TokenScopeReadOnly  TokenScope = "read_only"
+	TokenScopeReadWrite TokenScope = "read_write"
+)
+
+func (e *TokenScope) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TokenScope(s)
+	case string:
+		*e = TokenScope(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TokenScope: %T", src)
+	}
+	return nil
+}
+
+type NullTokenScope struct {
+	TokenScope TokenScope `json:"token_scope"`
+	Valid      bool       `json:"valid"` // Valid is true if TokenScope is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTokenScope) Scan(value interface{}) error {
+	if value == nil {
+		ns.TokenScope, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TokenScope.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTokenScope) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TokenScope), nil
+}
 
 type Measurement struct {
 	ID        pgtype.UUID        `json:"id"`
 	Date      pgtype.Date        `json:"date"`
 	Kg        pgtype.Numeric     `json:"kg"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Token struct {
+	ID        pgtype.UUID        `json:"id"`
+	TokenHash string             `json:"token_hash"`
+	Label     string             `json:"label"`
+	Scope     TokenScope         `json:"scope"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
 }

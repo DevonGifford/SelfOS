@@ -12,8 +12,11 @@ import (
 
 type Querier interface {
 	CreateMeasurement(ctx context.Context, arg CreateMeasurementParams) (Measurement, error)
+	CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error)
 	DeleteMeasurement(ctx context.Context, id pgtype.UUID) error
+	GetTokenByHash(ctx context.Context, tokenHash string) (Token, error)
 	ListMeasurements(ctx context.Context) ([]Measurement, error)
+	RevokeToken(ctx context.Context, id pgtype.UUID) error
 	UpdateMeasurement(ctx context.Context, arg UpdateMeasurementParams) (Measurement, error)
 }
 
