@@ -10,6 +10,7 @@ import { selectDailyTotals } from "@/features/nutrition/select-daily-totals";
 import { useFoodEntries } from "@/features/nutrition/use-food-entries";
 import { useFoods } from "@/features/nutrition/use-foods";
 import { todayString } from "@/lib/date";
+import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
 import { StatusNutrition } from "@/features/status/nutrition";
 
 function macroProgress(consumed: number, target: number) {
@@ -25,6 +26,8 @@ export function NutritionPage() {
   const [editingEntry, setEditingEntry] = useState<FoodEntry | undefined>(undefined);
   const [editOpen, setEditOpen] = useState(false);
   const [editKey, setEditKey] = useState(0);
+
+  useOpenAddFromQuery(openAddDrawer);
 
   if (!entriesQuery.data || !foodsQuery.data) return null;
 
