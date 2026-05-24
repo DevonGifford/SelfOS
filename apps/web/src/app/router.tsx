@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 
 import { AppShell } from "@/app/app-shell";
 import { checkSession } from "@/data/auth-client";
+import { ComingSoonPage } from "@/routes/coming-soon";
 import { HabitsPage } from "@/routes/habits";
 import { LoginPage } from "@/routes/login";
 import { MeasurementsPage } from "@/routes/measurements";
@@ -57,6 +58,39 @@ export const router = createBrowserRouter([
       {
         path: "measurements",
         element: <MeasurementsPage />,
+      },
+      {
+        path: "settings",
+        element: (
+          <ComingSoonPage
+            title="Settings"
+            description="Profile and app-wide settings — Nutrition Targets, Training Schedule, and more — land here once there's a real Configuration surface to edit them from."
+          />
+        ),
+      },
+      {
+        path: "habits/history",
+        element: (
+          <ComingSoonPage title="Habits History" description="A dedicated view of your habit streaks and completion history over time." />
+        ),
+      },
+      {
+        path: "nutrition/history",
+        element: (
+          <ComingSoonPage title="Nutrition Trends" description="Macro trends over time — calories, protein, carbs, and fat across days and weeks." />
+        ),
+      },
+      {
+        path: "training/history",
+        element: (
+          <ComingSoonPage title="Training History" description="A full log of past sessions, once workout logging itself is built." />
+        ),
+      },
+      {
+        path: "measurements/history",
+        element: (
+          <ComingSoonPage title="Weight History" description="A dedicated trend view — the Measurements page's own trend and log stay where they are for now." />
+        ),
       },
     ],
   },

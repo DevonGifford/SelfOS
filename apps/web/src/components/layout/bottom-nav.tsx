@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Menu, UtensilsCrossed } from "lucide-react";
+import { Home, Menu, UtensilsCrossed, X } from "lucide-react";
 import { NavLink } from "react-router";
 
 import { NavDrawer } from "@/components/layout/nav-drawer";
@@ -22,10 +22,13 @@ export function BottomNav() {
         <nav className="mx-auto flex w-full max-w-[430px] border-x border-t">
           <button
             type="button"
-            onClick={() => setDrawerOpen(true)}
-            className="flex flex-1 flex-col items-center gap-1 py-3 text-muted-foreground transition-colors"
+            onClick={() => setDrawerOpen((isOpen) => !isOpen)}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 py-3 text-muted-foreground transition-colors",
+              drawerOpen && "text-foreground",
+            )}
           >
-            <Menu className="size-5" />
+            {drawerOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             <span className="font-mono text-[10px] uppercase tracking-wider">Menu</span>
           </button>
 
