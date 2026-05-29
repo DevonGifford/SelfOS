@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/DevonGifford/SelfOS/apps/api/internal/auth"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/database"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/measurements"
 )
@@ -19,6 +20,16 @@ func main() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		log.Fatal("DATABASE_URL is not set")
+	}
+
+	passwordHash := os.Getenv("AUTH_PASSWORD_HASH")
+	if passwordHash == "" {
+		log.Fatal("AUTH_PASSWORD_HASH is not set")
+	}
+
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		log.Fatal("SESSION_SECRET is not set")
 	}
 
 	ctx := context.Background()
@@ -43,7 +54,9 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
-	measurements.NewHandler(queries).Register(mux)
+	auth.NewHandler(passwordHash, []byte(sessionSecret)).Register(mux)
+	requireAuth := auth.Require([]byte(sessionSecret), queries)
+	measurements.NewHandler(queries).Register(mux, requireAuth)
 
 	// Vercel's Go runtime requires the server to listen on PORT; API_ADDR is
 	// this repo's own pre-existing convention (compose.yaml sets it), so it
