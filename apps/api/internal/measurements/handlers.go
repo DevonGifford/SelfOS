@@ -20,12 +20,14 @@ func NewHandler(q *database.Queries) *Handler {
 	return &Handler{queries: q}
 }
 
-// Register wires the four routes onto mux (Go 1.22+ pattern routing).
-func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/measurements", h.list)
-	mux.HandleFunc("POST /api/measurements", h.create)
-	mux.HandleFunc("PATCH /api/measurements/{id}", h.update)
-	mux.HandleFunc("DELETE /api/measurements/{id}", h.delete)
+// Register wires the four routes onto mux (Go 1.22+ pattern routing),
+// each behind protect. Behavior for an already-authenticated request is
+// unchanged — protect only adds the 401 path for everyone else.
+func (h *Handler) Register(mux *http.ServeMux, protect func(http.Handler) http.Handler) {
+	mux.Handle("GET /api/measurements", protect(http.HandlerFunc(h.list)))
+	mux.Handle("POST /api/measurements", protect(http.HandlerFunc(h.create)))
+	mux.Handle("PATCH /api/measurements/{id}", protect(http.HandlerFunc(h.update)))
+	mux.Handle("DELETE /api/measurements/{id}", protect(http.HandlerFunc(h.delete)))
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
