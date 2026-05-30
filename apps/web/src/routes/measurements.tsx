@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { SectionStat } from "@/components/ui/section-stat";
-import { ApiError } from "@/data/api-client";
+import { ApiError } from "@/data/http";
 import type { Weight, WeightEntry } from "@/data/schemas/weight";
 import { MeasurementDrawer } from "@/features/measurements/measurement-drawer";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
@@ -47,7 +47,7 @@ export function MeasurementsPage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // A network failure never reaches the API and surfaces as a plain fetch
-  // error, not an ApiError (data/api-client.ts only wraps a response the
+  // error, not an ApiError (data/http.ts only wraps a response the
   // server actually sent). That split is what lets "offline" (scope B —
   // .scratch/pwa-release/issues/01-pwa-scope.md — the app shell installs
   // and opens offline, but data still needs the network) read differently

@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ApiError } from "@/data/api-client";
+import { ApiError } from "@/data/http";
 import type { WeightEntry } from "@/data/schemas/weight";
 import {
   useCreateMeasurement,
