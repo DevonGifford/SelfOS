@@ -22,6 +22,7 @@ type Querier interface {
 	DeleteFoodEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteHabitEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteMeasurement(ctx context.Context, id pgtype.UUID) error
+	GetConfiguration(ctx context.Context) (Configuration, error)
 	GetFood(ctx context.Context, id pgtype.UUID) (Food, error)
 	GetFoodEntry(ctx context.Context, id pgtype.UUID) (FoodEntry, error)
 	GetHabit(ctx context.Context, id pgtype.UUID) (Habit, error)
@@ -33,6 +34,7 @@ type Querier interface {
 	ListMeasurements(ctx context.Context) ([]Measurement, error)
 	ReorderHabits(ctx context.Context, ids []pgtype.UUID) error
 	RevokeToken(ctx context.Context, id pgtype.UUID) error
+	UpdateConfiguration(ctx context.Context, arg UpdateConfigurationParams) (Configuration, error)
 	UpdateFood(ctx context.Context, arg UpdateFoodParams) (Food, error)
 	UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEntryQuantityParams) (FoodEntry, error)
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error)
