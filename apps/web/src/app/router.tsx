@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 
 import { AppShell } from "@/app/app-shell";
 import { checkSession } from "@/data/auth-client";
+import { isGuestSession } from "@/data/guest";
 import { ComingSoonPage } from "@/routes/coming-soon";
 import { HabitsPage } from "@/routes/habits";
 import { HomePage } from "@/routes/home";
@@ -16,7 +17,13 @@ import { TrainingPage } from "@/routes/training";
 // other failure is a network error (offline, scope B), not an expired
 // session, so the loader resolves normally and lets the shell render from
 // the service-worker-precached shell instead of blocking on it.
+//
+// A guest session never sets the real cookie, so checkSession() would
+// always 401 and parseOrThrow would bounce straight back to /login before
+// this function's own try/catch ever runs — skip it entirely for guests.
 async function sessionLoader() {
+  if (isGuestSession()) return null;
+
   try {
     await checkSession();
   } catch {

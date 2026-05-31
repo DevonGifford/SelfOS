@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerSwipeArea, DrawerTitle } from "@/components/ui/drawer";
 import { logout } from "@/data/auth-client";
+import { exitGuestSession, isGuestSession } from "@/data/guest";
 
 const LINK_CLASS = "flex items-center gap-3 rounded-md px-2 py-2.5 text-sm hover:bg-muted";
 
@@ -54,6 +55,7 @@ type NavDrawerProps = {
 export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
   const location = useLocation();
   const extras = SECTION_EXTRAS[location.pathname];
+  const isGuest = isGuestSession();
 
   function close() {
     onOpenChange(false);
@@ -70,6 +72,11 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
               Self<span className="text-muted-foreground">/OS</span>
             </DrawerTitle>
           </Link>
+          {isGuest && (
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Guest Mode — nothing here is saved
+            </p>
+          )}
         </DrawerHeader>
 
         <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
@@ -105,17 +112,32 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
               <Settings className="size-4" />
               Settings
             </Link>
-            <button
-              type="button"
-              onClick={() => {
-                close();
-                void logout();
-              }}
-              className={LINK_CLASS}
-            >
-              <LogOut className="size-4" />
-              Log Out
-            </button>
+            {isGuest ? (
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  exitGuestSession();
+                  window.location.assign("/login");
+                }}
+                className={LINK_CLASS}
+              >
+                <LogOut className="size-4" />
+                Exit Guest Mode
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  void logout();
+                }}
+                className={LINK_CLASS}
+              >
+                <LogOut className="size-4" />
+                Log Out
+              </button>
+            )}
           </div>
         </DrawerFooter>
       </DrawerContent>

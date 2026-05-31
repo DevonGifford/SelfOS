@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { enterGuestSession } from "@/data/guest";
 import { ApiError } from "@/data/http";
 import { useLogin } from "@/features/auth/use-login";
 
@@ -67,7 +68,14 @@ export function LoginForm({ onAuthenticated }: { onAuthenticated: () => void }) 
               Exploring?
             </span>
           </div>
-          <Button type="button" variant="secondary" disabled title="Coming soon">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              enterGuestSession();
+              onAuthenticated();
+            }}
+          >
             Guest Access
           </Button>
         </Field>
