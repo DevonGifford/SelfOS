@@ -65,7 +65,7 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
 
       <DrawerContent>
         <DrawerHeader>
-          <Link to="/status" onClick={close}>
+          <Link to="/home" onClick={close}>
             <DrawerTitle className="font-heading text-2xl uppercase tracking-widest pt-2">
               Self<span className="text-muted-foreground">/OS</span>
             </DrawerTitle>

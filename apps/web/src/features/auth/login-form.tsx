@@ -26,7 +26,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
     login.mutate(password, {
       onSuccess: () => {
-        window.location.assign("/status");
+        window.location.assign("/home");
       },
       onError: (err) => {
         if (err instanceof ApiError) {

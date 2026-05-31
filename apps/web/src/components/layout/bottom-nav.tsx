@@ -5,11 +5,11 @@ import { NavLink } from "react-router";
 import { NavDrawer } from "@/components/layout/nav-drawer";
 import { cn } from "@/lib/utils";
 
-// Status and Nutrition get direct slots (highest-frequency actions —
+// Home and Nutrition get direct slots (highest-frequency actions —
 // .scratch/bottom-nav-wayfinding/map.md); every other section moves into
 // the drawer the third slot opens.
 const NAV_ITEMS = [
-  { to: "/status", label: "Status", icon: Home },
+  { to: "/home", label: "Home", icon: Home },
   { to: "/nutrition", label: "Nutrition", icon: UtensilsCrossed },
 ];
 

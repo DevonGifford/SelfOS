@@ -4,10 +4,10 @@ import { AppShell } from "@/app/app-shell";
 import { checkSession } from "@/data/auth-client";
 import { ComingSoonPage } from "@/routes/coming-soon";
 import { HabitsPage } from "@/routes/habits";
+import { HomePage } from "@/routes/home";
 import { LoginPage } from "@/routes/login";
 import { MeasurementsPage } from "@/routes/measurements";
 import { NutritionPage } from "@/routes/nutrition";
-import { StatusPage } from "@/routes/status";
 import { TrainingPage } from "@/routes/training";
 
 // Runs before AppShell renders, so there's no shell-flash-then-bounce
@@ -37,11 +37,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/status" replace />,
+        element: <Navigate to="/home" replace />,
       },
       {
-        path: "status",
-        element: <StatusPage />,
+        path: "home",
+        element: <HomePage />,
       },
       {
         path: "nutrition",
