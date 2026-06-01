@@ -1,3 +1,4 @@
+import { ConfigurationSchema, type Configuration } from "@/data/schemas/configuration";
 import { FoodEntriesSchema, FoodEntrySchema, type FoodEntry } from "@/data/schemas/food-entries";
 import { FoodSchema, FoodsSchema, type Food } from "@/data/schemas/foods";
 import { HabitEntriesSchema, HabitEntrySchema, type HabitEntry } from "@/data/schemas/habit-entries";
@@ -10,6 +11,7 @@ const HABITS_URL = "/api/habits";
 const HABIT_ENTRIES_URL = "/api/habits/entries";
 const FOODS_URL = "/api/foods";
 const FOOD_ENTRIES_URL = "/api/food-entries";
+const CONFIGURATION_URL = "/api/configuration";
 
 type MeasurementInput = {
   date: string;
@@ -182,4 +184,20 @@ export async function updateFoodEntry(id: string, quantity: number): Promise<Foo
 export async function deleteFoodEntry(id: string): Promise<void> {
   const response = await fetch(`${FOOD_ENTRIES_URL}/${id}`, { method: "DELETE" });
   await parseOrThrow(response);
+}
+
+export async function getConfiguration(): Promise<Configuration> {
+  const response = await fetch(CONFIGURATION_URL);
+  const body = await parseOrThrow(response);
+  return ConfigurationSchema.parse(body);
+}
+
+export async function updateConfiguration(input: Configuration): Promise<Configuration> {
+  const response = await fetch(CONFIGURATION_URL, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = await parseOrThrow(response);
+  return ConfigurationSchema.parse(body);
 }

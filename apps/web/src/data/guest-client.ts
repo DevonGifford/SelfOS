@@ -1,8 +1,10 @@
+import { demoConfiguration } from "@/data/data-demo/configuration";
 import { demoFoodEntries } from "@/data/data-demo/food-entries";
 import { demoFoods } from "@/data/data-demo/foods";
 import { demoHabitEntries } from "@/data/data-demo/habit-entries";
 import { demoHabits } from "@/data/data-demo/habits";
 import { demoWeight } from "@/data/data-demo/weight";
+import type { Configuration } from "@/data/schemas/configuration";
 import type { FoodEntry } from "@/data/schemas/food-entries";
 import type { Food } from "@/data/schemas/foods";
 import type { HabitEntry } from "@/data/schemas/habit-entries";
@@ -20,6 +22,7 @@ let habits: Habit[] = [...demoHabits];
 let habitEntries: HabitEntry[] = [...demoHabitEntries];
 let foods: Food[] = [...demoFoods];
 let foodEntries: FoodEntry[] = [...demoFoodEntries];
+let configuration: Configuration = { ...demoConfiguration };
 
 function guestId(): string {
   return `guest-${Math.random().toString(36).slice(2)}`;
@@ -188,4 +191,13 @@ export async function updateFoodEntry(id: string, quantity: number): Promise<Foo
 
 export async function deleteFoodEntry(id: string): Promise<void> {
   foodEntries = foodEntries.filter((e) => e.id !== id);
+}
+
+export async function getConfiguration(): Promise<Configuration> {
+  return { ...configuration };
+}
+
+export async function updateConfiguration(input: Configuration): Promise<Configuration> {
+  configuration = { ...input };
+  return { ...configuration };
 }

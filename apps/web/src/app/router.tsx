@@ -9,6 +9,7 @@ import { HomePage } from "@/routes/home";
 import { LoginPage } from "@/routes/login";
 import { MeasurementsPage } from "@/routes/measurements";
 import { NutritionPage } from "@/routes/nutrition";
+import { SettingsPage } from "@/routes/settings";
 import { TrainingPage } from "@/routes/training";
 
 // Runs before AppShell renders, so there's no shell-flash-then-bounce
@@ -68,12 +69,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "settings",
-        element: (
-          <ComingSoonPage
-            title="Settings"
-            description="Profile and app-wide settings — Nutrition Targets, Training Schedule, and more — land here once there's a real Configuration surface to edit them from."
-          />
-        ),
+        element: <SettingsPage />,
       },
       {
         path: "habits/history",

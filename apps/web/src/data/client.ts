@@ -48,6 +48,9 @@ export const createFoodEntry = withGuest(api.createFoodEntry, guestClient.create
 export const updateFoodEntry = withGuest(api.updateFoodEntry, guestClient.updateFoodEntry);
 export const deleteFoodEntry = withGuest(api.deleteFoodEntry, guestClient.deleteFoodEntry);
 
+export const getConfiguration = withGuest(api.getConfiguration, guestClient.getConfiguration);
+export const updateConfiguration = withGuest(api.updateConfiguration, guestClient.updateConfiguration);
+
 // When a domain's getters move into the block above, remove it from this
 // list — TypeScript then rejects every <DemoDataBadge domain="..."/> call
 // site still using it.
