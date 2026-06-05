@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/ui/header";
 import { SectionStat } from "@/components/ui/section-stat";
 import { ApiError } from "@/data/http";
 import type { Weight, WeightEntry } from "@/data/schemas/weight";
@@ -102,16 +103,18 @@ export function MeasurementsPage() {
 
   return (
     <div className="p-4">
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest">SELF/OS</p>
-          <h1 className="mt-2 text-3xl font-semibold">Weight</h1>
-        </div>
-
-        <Button size="sm" onClick={openAddDrawer}>
-          Log Weight
-        </Button>
-      </header>
+      <div className="mb-8">
+        <Header
+          eyebrow="SELF/OS"
+          title="Weight"
+          primary={latest ? { label: "Latest", value: `${latest.kg} kg`, progress: 1 } : undefined}
+          note={
+            <Button size="sm" onClick={openAddDrawer}>
+              Log Weight
+            </Button>
+          }
+        />
+      </div>
 
       {state === "loading" && (
         <>

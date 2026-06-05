@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 
-import { DemoDataBadge } from "@/components/ui/demo-data-badge";
 import { ProgressStat } from "@/components/ui/progress";
 import type { Status } from "@/data/schemas/status";
 
@@ -10,12 +9,8 @@ type StatusNutritionProps = {
 
 export function StatusNutrition({ nutrition }: StatusNutritionProps) {
   return (
-    <div className="mt-8">
-      <div className="mb-2 flex justify-end">
-        <DemoDataBadge />
-      </div>
-
-      <Link to="/nutrition" className="block space-y-4">
+    <div className="mt-6">
+      <Link to="/nutrition" className="block space-y-0.5">
         <ProgressStat
           label="Calories"
           value={nutrition.calories.consumed}

@@ -88,13 +88,13 @@ function ProgressStat({
     <Progress
       value={value}
       max={max}
-      className={cn("flex-col items-stretch gap-1.5", className)}
+      className={cn("flex-col items-stretch gap-0.5", className)}
     >
       <div className="flex items-baseline justify-between">
-        <ProgressLabel className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+        <ProgressLabel className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
           {label}
         </ProgressLabel>
-        <ProgressValue className="ml-0 font-mono text-xs normal-case tracking-normal text-muted-foreground">
+        <ProgressValue className="ml-0 font-mono text-[8px] normal-case tracking-normal text-muted-foreground">
           {() => `${value} / ${max}`}
         </ProgressValue>
       </div>

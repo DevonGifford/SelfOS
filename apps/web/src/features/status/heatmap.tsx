@@ -39,7 +39,7 @@ export function StatusHeatmap({ entries }: StatusHeatmapProps) {
     <section className="mt-8 border-t pt-4">
       <div className="flex items-center justify-between">
         <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Habits Graph</h2>
-        <DemoDataBadge />
+        <DemoDataBadge domain="habits" />
       </div>
       <div className="mt-4">
         <HabitHeatmap entries={entries} />

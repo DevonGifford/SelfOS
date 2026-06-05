@@ -1,4 +1,5 @@
 import { DemoDataBadge } from "@/components/ui/demo-data-badge";
+import { Header } from "@/components/ui/header";
 import { SectionStat } from "@/components/ui/section-stat";
 import { useTraining } from "@/features/training/use-training";
 
@@ -11,17 +12,9 @@ export function TrainingPage() {
 
   return (
     <div className="p-4">
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest">
-            SELF/OS
-          </p>
-
-          <h1 className="mt-2 text-3xl font-semibold">Training</h1>
-        </div>
-
-        <DemoDataBadge />
-      </header>
+      <div className="mb-8">
+        <Header eyebrow="SELF/OS" badge={<DemoDataBadge domain="training" />} title="Training" />
+      </div>
 
       <SectionStat label="Split" value={data.split} />
 

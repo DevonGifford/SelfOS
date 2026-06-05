@@ -1,26 +1,40 @@
-import type { PropsWithChildren } from "react";
+import type { ReactNode } from "react";
+import { Link } from "react-router";
 
-type ProgressRingProps = PropsWithChildren<{
-  value: number;
-  max: number;
+type ProgressRingProps = {
+  /** 0..1 */
+  progress: number;
+  value: ReactNode;
+  label: ReactNode;
   size?: number;
   strokeWidth?: number;
-}>;
+  valueClassName?: string;
+  href?: string;
+  linkClassName?: string;
+  className?: string;
+};
 
 export function ProgressRing({
+  progress,
   value,
-  max,
+  label,
   size = 128,
   strokeWidth = 8,
-  children,
+  valueClassName,
+  href,
+  linkClassName,
+  className,
 }: ProgressRingProps) {
   const radius = size / 2 - strokeWidth;
   const circumference = 2 * Math.PI * radius;
-  const fraction = max > 0 ? Math.max(0, Math.min(value / max, 1)) : 0;
+  const fraction = Math.max(0, Math.min(progress, 1));
   const offset = circumference * (1 - fraction);
 
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+  const ring = (
+    <div
+      className={`relative shrink-0 ${className ?? ""}`}
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -42,8 +56,19 @@ export function ProgressRing({
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {children}
+        <p className={valueClassName}>{value}</p>
+        <p className="text-center font-mono text-[9px] uppercase leading-tight text-muted-foreground">
+          {label}
+        </p>
       </div>
     </div>
+  );
+
+  return href ? (
+    <Link to={href} className={linkClassName}>
+      {ring}
+    </Link>
+  ) : (
+    ring
   );
 }
