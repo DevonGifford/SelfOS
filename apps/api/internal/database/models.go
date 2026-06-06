@@ -53,6 +53,21 @@ func (ns NullTokenScope) Value() (driver.Value, error) {
 	return string(ns.TokenScope), nil
 }
 
+type Habit struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Active    bool               `json:"active"`
+	Position  int32              `json:"position"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type HabitEntry struct {
+	ID        pgtype.UUID        `json:"id"`
+	HabitID   pgtype.UUID        `json:"habit_id"`
+	Date      pgtype.Date        `json:"date"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Measurement struct {
 	ID        pgtype.UUID        `json:"id"`
 	Date      pgtype.Date        `json:"date"`

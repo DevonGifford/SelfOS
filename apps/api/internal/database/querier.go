@@ -11,12 +11,21 @@ import (
 )
 
 type Querier interface {
+	CountActiveHabits(ctx context.Context) (int64, error)
+	CreateHabit(ctx context.Context, name string) (Habit, error)
+	CreateHabitEntry(ctx context.Context, arg CreateHabitEntryParams) (HabitEntry, error)
 	CreateMeasurement(ctx context.Context, arg CreateMeasurementParams) (Measurement, error)
 	CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error)
+	DeleteHabitEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteMeasurement(ctx context.Context, id pgtype.UUID) error
+	GetHabit(ctx context.Context, id pgtype.UUID) (Habit, error)
 	GetTokenByHash(ctx context.Context, tokenHash string) (Token, error)
+	ListHabitEntries(ctx context.Context) ([]HabitEntry, error)
+	ListHabits(ctx context.Context) ([]Habit, error)
 	ListMeasurements(ctx context.Context) ([]Measurement, error)
+	ReorderHabits(ctx context.Context, ids []pgtype.UUID) error
 	RevokeToken(ctx context.Context, id pgtype.UUID) error
+	UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error)
 	UpdateMeasurement(ctx context.Context, arg UpdateMeasurementParams) (Measurement, error)
 }
 
