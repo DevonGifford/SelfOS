@@ -8,11 +8,11 @@ import type { Habit } from "@/data/schemas/habits";
 import { HabitDrawer } from "@/features/habits/habit-drawer";
 import { isCompletedToday } from "@/features/habits/select-completed-today";
 import { selectStreak } from "@/features/habits/select-streak";
-import { todayString } from "@/features/habits/today";
 import { useHabitEntries } from "@/features/habits/use-habit-entries";
 import { useReorderHabits } from "@/features/habits/use-habit-mutations";
 import { useHabits } from "@/features/habits/use-habits";
 import { useToggleHabitEntry } from "@/features/habits/use-toggle-habit-entry";
+import { todayString } from "@/lib/date";
 
 export function HabitsPage() {
   const habitsQuery = useHabits();
