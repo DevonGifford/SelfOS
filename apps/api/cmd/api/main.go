@@ -13,6 +13,7 @@ import (
 	"github.com/DevonGifford/SelfOS/apps/api/internal/database"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/habits"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/measurements"
+	"github.com/DevonGifford/SelfOS/apps/api/internal/nutrition"
 )
 
 func main() {
@@ -59,6 +60,7 @@ func main() {
 	requireAuth := auth.Require([]byte(sessionSecret), queries)
 	measurements.NewHandler(queries).Register(mux, requireAuth)
 	habits.NewHandler(queries).Register(mux, requireAuth)
+	nutrition.NewHandler(queries).Register(mux, requireAuth)
 
 	// Vercel's Go runtime requires the server to listen on PORT; API_ADDR is
 	// this repo's own pre-existing convention (compose.yaml sets it), so it

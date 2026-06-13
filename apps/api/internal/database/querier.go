@@ -12,19 +12,29 @@ import (
 
 type Querier interface {
 	CountActiveHabits(ctx context.Context) (int64, error)
+	CreateFood(ctx context.Context, arg CreateFoodParams) (Food, error)
+	CreateFoodEntry(ctx context.Context, arg CreateFoodEntryParams) (FoodEntry, error)
 	CreateHabit(ctx context.Context, name string) (Habit, error)
 	CreateHabitEntry(ctx context.Context, arg CreateHabitEntryParams) (HabitEntry, error)
 	CreateMeasurement(ctx context.Context, arg CreateMeasurementParams) (Measurement, error)
 	CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error)
+	DeleteFood(ctx context.Context, id pgtype.UUID) error
+	DeleteFoodEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteHabitEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteMeasurement(ctx context.Context, id pgtype.UUID) error
+	GetFood(ctx context.Context, id pgtype.UUID) (Food, error)
+	GetFoodEntry(ctx context.Context, id pgtype.UUID) (FoodEntry, error)
 	GetHabit(ctx context.Context, id pgtype.UUID) (Habit, error)
 	GetTokenByHash(ctx context.Context, tokenHash string) (Token, error)
+	ListFoodEntries(ctx context.Context) ([]FoodEntry, error)
+	ListFoods(ctx context.Context) ([]Food, error)
 	ListHabitEntries(ctx context.Context) ([]HabitEntry, error)
 	ListHabits(ctx context.Context) ([]Habit, error)
 	ListMeasurements(ctx context.Context) ([]Measurement, error)
 	ReorderHabits(ctx context.Context, ids []pgtype.UUID) error
 	RevokeToken(ctx context.Context, id pgtype.UUID) error
+	UpdateFood(ctx context.Context, arg UpdateFoodParams) (Food, error)
+	UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEntryQuantityParams) (FoodEntry, error)
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error)
 	UpdateMeasurement(ctx context.Context, arg UpdateMeasurementParams) (Measurement, error)
 }
