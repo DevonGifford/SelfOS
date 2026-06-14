@@ -1,4 +1,4 @@
-import { todayString } from "@/features/habits/today";
+import { todayString } from "@/lib/date";
 import { useHabitEntries } from "@/features/habits/use-habit-entries";
 import { useHabits } from "@/features/habits/use-habits";
 import { useHabitsHistory } from "@/features/habits/use-habits-history";

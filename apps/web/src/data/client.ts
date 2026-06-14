@@ -17,10 +17,18 @@ export {
   getHabitEntries,
   createHabitEntry,
   deleteHabitEntry,
+  getFoods,
+  createFood,
+  updateFood,
+  deleteFood,
+  getFoodEntries,
+  createFoodEntry,
+  updateFoodEntry,
+  deleteFoodEntry,
 } from "./api-client";
 
 // When a domain's getters move into the api-client re-export block above,
 // remove it from this list — TypeScript then rejects every
 // <DemoDataBadge domain="..."/> call site still using it.
-export const DEMO_DOMAINS = ["nutrition", "training"] as const;
+export const DEMO_DOMAINS = ["training"] as const;
 export type DemoDomain = (typeof DEMO_DOMAINS)[number];
