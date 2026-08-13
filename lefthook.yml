@@ -1,0 +1,24 @@
+pre-commit:
+  commands:
+    web-lint:
+      root: "apps/web"
+      glob: "apps/web/**/*.{ts,tsx}"
+      run: pnpm lint
+
+pre-push:
+  parallel: true
+  commands:
+    web-build:
+      root: "apps/web"
+      glob: "apps/web/**"
+      run: pnpm build
+    web-test:
+      root: "apps/web"
+      glob: "apps/web/**"
+      run: pnpm test
+
+    # Uncomment once apps/api has real Go code (go.mod + .go files):
+    # api-check:
+    #   root: "apps/api"
+    #   glob: "apps/api/**/*.go"
+    #   run: go vet ./... && go build ./... && go test ./...
