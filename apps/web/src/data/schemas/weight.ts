@@ -4,6 +4,7 @@ export const WeightEntrySchema = z.object({
   id: z.string(),
   date: z.string(),
   kg: z.number(),
+  createdAt: z.string().optional(),
 });
 
 export const WeightSchema = z.array(WeightEntrySchema);

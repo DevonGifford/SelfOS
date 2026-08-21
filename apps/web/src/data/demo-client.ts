@@ -38,11 +38,10 @@ export async function getMeasurements() {
 }
 
 export async function getStatus() {
-  const [nutrition, training, habits, measurements] = await Promise.all([
+  const [nutrition, training, habits] = await Promise.all([
     getNutrition(),
     getTraining(),
     getHabits(),
-    getMeasurements(),
   ]);
 
   return StatusSchema.parse({
@@ -60,9 +59,6 @@ export async function getStatus() {
     habits: {
       completed: habits.filter((habit) => habit.completedToday).length,
       total: habits.length,
-    },
-    measurements: {
-      kg: measurements[measurements.length - 1]!.kg,
     },
   });
 }

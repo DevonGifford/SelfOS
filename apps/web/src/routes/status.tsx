@@ -7,6 +7,7 @@ import { LineChartStatus } from "@/components/status/line-chart-status";
 import { NutritionStatus } from "@/components/status/nutrition-status";
 import { getStatus } from "@/data/client";
 import { useHabitsHistory } from "@/features/habits/use-habits-history";
+import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
 import { selectLastComparableSession } from "@/features/training/select-last-comparable-session";
 import { useTrainingHistory } from "@/features/training/use-training-history";
@@ -31,11 +32,18 @@ export function StatusPage() {
     data.training.type,
   );
 
+  // Measurements is real now (see the Client Seam) — its "current weight"
+  // is derived here from the actual entries, not from getStatus()'s demo
+  // aggregate, and uses the same day-minimum rule everywhere a single
+  // weight number is shown (this ring, the trend chart, /measurements).
+  const dailyMinimums = selectDailyMinimums(measurementsQuery.data);
+  const latestKg = dailyMinimums.at(-1)?.kg ?? 0;
+
   return (
     <div className="p-4">
       <HeaderStatus
         training={data.training}
-        measurementsKg={data.measurements.kg}
+        measurementsKg={latestKg}
         habits={data.habits}
       />
 
@@ -43,7 +51,7 @@ export function StatusPage() {
 
       <LastSessionStatus session={lastSession} today={data.training.type} />
 
-      <LineChartStatus entries={measurementsQuery.data} />
+      <LineChartStatus entries={dailyMinimums} />
 
       <HeatmapStatus entries={historyQuery.data} />
     </div>

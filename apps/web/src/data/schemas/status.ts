@@ -23,9 +23,6 @@ export const StatusSchema = z.object({
     completed: z.number(),
     total: z.number(),
   }),
-  measurements: z.object({
-    kg: z.number(),
-  }),
 });
 
 export type Status = z.infer<typeof StatusSchema>;

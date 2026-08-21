@@ -1,4 +1,5 @@
 import { SectionStat } from "@/components/ui/section-stat";
+import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
 
 export function MeasurementsPage() {
@@ -8,7 +9,10 @@ export function MeasurementsPage() {
 
   const { data } = query;
 
-  const latest = data[data.length - 1];
+  // Same day-minimum rule as the Status ring/trend chart (decision 02) —
+  // "Latest" is the most recent day's lowest reading, not just whichever
+  // row the API happened to return first.
+  const latest = selectDailyMinimums(data).at(-1);
 
   return (
     <div className="p-4">
@@ -20,7 +24,7 @@ export function MeasurementsPage() {
         <h1 className="mt-2 text-3xl font-semibold">Weight</h1>
       </header>
 
-      <SectionStat label="Latest" value={`${latest.kg} kg`} />
+      <SectionStat label="Latest" value={latest ? `${latest.kg} kg` : "—"} />
 
       <SectionStat label="Log">
         <ul className="space-y-3">
