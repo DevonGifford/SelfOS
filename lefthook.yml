@@ -17,8 +17,7 @@ pre-push:
       glob: "apps/web/**"
       run: pnpm test
 
-    # Uncomment once apps/api has real Go code (go.mod + .go files):
-    # api-check:
-    #   root: "apps/api"
-    #   glob: "apps/api/**/*.go"
-    #   run: go vet ./... && go build ./... && go test ./...
+    api-check:
+      root: "apps/api"
+      glob: "apps/api/**/*.go"
+      run: go vet ./... && go build ./... && go test ./...
