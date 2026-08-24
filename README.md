@@ -56,7 +56,7 @@ React / Vite
      │
      │ sqlc / pgx
      ▼
-Supabase PostgreSQL
+  PostgreSQL
 ```
 
 #### Repository Structure
@@ -69,7 +69,6 @@ SelfOS/
 ├── database/
 │   ├── migrations/       # goose migrations
 │   └── queries/          # sqlc queries
-├── supabase/             # local Supabase config
 ├── docs/                 # ADRs, quickstart guide
 ├── compose.yaml
 ├── sqlc.yaml
@@ -110,13 +109,11 @@ The backend lives in `apps/api` and exposes a REST API over HTTP. It handles req
 
 The API uses Go’s standard `net/http` package, `pgx/v5` for PostgreSQL access, `sqlc` to generate type-safe Go code from hand-written SQL, and `goose` to manage database migrations. SQL remains explicit, version-controlled, and close to the data model rather than being hidden behind an ORM.
 
-#### Supabase / PostgreSQL
+#### PostgreSQL
 
-Supabase provides the local and hosted PostgreSQL environment.
+SelfOS runs on plain PostgreSQL — no managed-platform lock-in. The Go API is the only thing that talks to the database, and it only ever depends on a `DATABASE_URL`.
 
-For now, SelfOS primarily uses Supabase as managed Postgres infrastructure. Auth, Storage, and other Supabase services may be introduced where they make sense later, but the Go API remains the application boundary.
-
-Locally, the Supabase CLI runs its own Docker stack. The SelfOS API container joins the Supabase Docker network directly and connects to the Postgres container there.
+This is mid-migration off a prior Supabase-based setup; see [`QUICKSTART.md`](./docs/QUICKSTART.md) for the current local-dev story.
 
 #### Docker Development Environment
 

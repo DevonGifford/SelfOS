@@ -32,29 +32,8 @@ services:
     env_file:
       - .env
 
-    # .env's DATABASE_URL (127.0.0.1:54322) is the host-side address for the
-    # local Supabase stack (supabase start) — that means "this container"
-    # from inside api, not the host, so it's overridden here to reach
-    # Postgres directly on Supabase's own Docker network instead (see the
-    # `networks` block below). Bare `go run`/`go test`/tooling on the host
-    # keep using .env's value unchanged.
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@supabase_db_SelfOS:5432/postgres
       - API_ADDR=:8080
-
-    networks:
-      - default
-      - supabase
 
 volumes:
   web_node_modules:
-
-networks:
-  default: {}
-  # Supabase's local stack (supabase start) manages its own separate Compose
-  # project and network — not merged into this file (see decision 01/Q26) —
-  # so api joins that network as an external one instead of reimplementing
-  # Postgres/Auth/Storage here.
-  supabase:
-    name: supabase_network_SelfOS
-    external: true

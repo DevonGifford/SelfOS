@@ -43,10 +43,10 @@ A read model, not its own source-of-truth domain — the current-day rollup comb
 The single import boundary (`data/client.ts`) every feature hook goes through. Feature code never imports `demo-client.ts` or `api-client.ts` directly. Domains migrate to real data independently, not as one wholesale swap: `client.ts` re-exports all of `demo-client.ts`, then each domain's functions are individually re-exported from `api-client.ts` as they go real — a named export shadows a star-export of the same name (spec-legal, not an ambiguity error), so a domain with a real backend and a domain still on demo data can coexist in the same seam. Once every domain has a real implementation, `demo-client.ts` and the wholesale re-export are dead code and get deleted.
 
 **Demo Mode**:
-The state where no domain has an `api-client.ts` override yet — every `get*`/mutation function resolves to `demo-client.ts`, writes simulate in-memory and reset on refresh, no backend involved. The natural starting state of a new domain, and the fallback for a public/portfolio deployment that never gets Supabase credentials.
+The state where no domain has an `api-client.ts` override yet — every `get*`/mutation function resolves to `demo-client.ts`, writes simulate in-memory and reset on refresh, no backend involved. The natural starting state of a new domain, and the fallback for a public/portfolio deployment that never gets database credentials.
 
 **Personal Mode**:
-The end state where every domain has been migrated (see Client Seam) — the Client Seam resolves entirely to `api-client.ts` (Go API → Supabase Postgres), writes persist for real. Getting there is gradual: the app spends most of its life in a transitional mix, some domains real and some still on demo data, and that's the expected, unremarkable middle state — not a bug to fix by rushing every domain to real data at once.
+The end state where every domain has been migrated (see Client Seam) — the Client Seam resolves entirely to `api-client.ts` (Go API → PostgreSQL), writes persist for real. Getting there is gradual: the app spends most of its life in a transitional mix, some domains real and some still on demo data, and that's the expected, unremarkable middle state — not a bug to fix by rushing every domain to real data at once.
 
 **Undo**:
 A short client-side window immediately after an action (e.g. "82.4 KG LOGGED — UNDO"), not a database mechanism. All deletes are real deletes — there is no soft-delete/`deleted_at` anywhere in the schema.
