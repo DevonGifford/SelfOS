@@ -1,4 +1,24 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=selfos
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d selfos"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
   web:
     build:
       context: .
@@ -32,8 +52,17 @@ services:
     env_file:
       - .env
 
+    # .env's DATABASE_URL (127.0.0.1:5432) is the host-side address, for bare
+    # `go run`/`go test`/`goose` on the host — from inside this container,
+    # "postgres" is the service name on the compose network instead.
     environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/selfos
       - API_ADDR=:8080
+
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   web_node_modules:
+  postgres_data:

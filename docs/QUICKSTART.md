@@ -10,10 +10,7 @@ docker compose up
 1. `cp .env.example .env` — `.env` is git-ignored and not shipped, so this step is required before anything below will connect to a database.
 2. `docker compose up` — builds and runs `apps/web` and `apps/api`, each in its own container with hot reload.
 
-`apps/web` is then at `http://localhost:5173`, and `apps/api` at `http://localhost:8080`.
-
-> [!NOTE]
-> Local Postgres is mid-migration off Supabase: `compose.yaml` doesn't yet run a database service, so `DATABASE_URL` in `.env` needs a Postgres instance you provide yourself for now. A `postgres` service in `compose.yaml` is coming next, at which point `docker compose up` alone will be a complete local environment.
+`apps/web` is then at `http://localhost:5173`, and `apps/api` at `http://localhost:8080`. `docker compose up` also brings up a local Postgres, with migrations still applied separately (see Database below).
 
 <br/>
 <br/>
