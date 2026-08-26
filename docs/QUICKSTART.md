@@ -19,11 +19,22 @@ docker compose up
 
 Database changes are managed with `goose`, while `sqlc` generates type-safe Go code from hand-written SQL queries. Run migrations when the schema changes, and run `sqlc generate` after changing migrations or query files.
 
-Apply migrations (needs `DATABASE_URL` exported in your shell first — it's only read from `.env` automatically inside the Go process itself, not by `goose` on the command line):
+Local dev's Postgres runs via `compose.yaml` (started by `docker compose up` above); hosted Postgres is [Neon](https://neon.com). The Go API only ever reads `DATABASE_URL` — same schema, same queries, same binary either way, only the connection string differs.
+
+Apply migrations to local Postgres (needs `DATABASE_URL` exported in your shell first — it's only read from `.env` automatically inside the Go process itself, not by `goose` on the command line):
 ```bash
 set -a; source .env; set +a
 goose -dir database/migrations postgres "$DATABASE_URL" up
 ```
+
+To apply migrations to the hosted Neon database instead, point `goose` at `NEON_DATABASE_URL` (also in `.env`) rather than `DATABASE_URL`:
+```bash
+set -a; source .env; set +a
+goose -dir database/migrations postgres "$NEON_DATABASE_URL" up
+```
+
+> [!NOTE]
+> A real deployment's own `DATABASE_URL` (wherever `apps/api` actually runs in production) isn't decided yet — `NEON_DATABASE_URL` is just how this repo's local dev reaches the hosted database directly (e.g. to run migrations against it). Whatever hosts `apps/api` in production will set its own `DATABASE_URL`, likely to the same Neon connection string.
 
 Generate Go database code after changing migrations or queries:
 ```bash

@@ -111,12 +111,16 @@ The API uses Go’s standard `net/http` package, `pgx/v5` for PostgreSQL access,
 
 #### PostgreSQL
 
-SelfOS runs on plain PostgreSQL — no managed-platform lock-in. The Go API is the only thing that talks to the database, and it only ever depends on a `DATABASE_URL`.
+SelfOS runs on plain PostgreSQL — no managed-platform lock-in. The Go API is the only thing that talks to the database, and it only ever depends on a `DATABASE_URL`; there's no provider-specific code and no environment branching anywhere in the app.
 
-This is mid-migration off a prior Supabase-based setup; see [`QUICKSTART.md`](./docs/QUICKSTART.md) for the current local-dev story.
+Local dev runs Postgres via Docker Compose; hosted/production Postgres is [Neon](https://neon.com). See [`QUICKSTART.md`](./docs/QUICKSTART.md) for the local setup.
 
 #### Docker Development Environment
 
 Local development uses Docker Compose for the SelfOS web and API services.
 
 The Go API uses Air for hot reload, while Vite handles frontend hot reload.
+
+#### Auth
+
+Not built yet. The plan is simple single-user auth in front of the Go API — a web session cookie plus per-client bearer tokens — needed before any public deployment. Everything above (Postgres, the client seam, Demo/Personal Mode) works without it today.
