@@ -16,27 +16,28 @@
       <a href="https://skillicons.dev">
        <img src="https://skillicons.dev/icons?i=react,ts,tailwind,vite,go,postgres,docker,github" />
     </a>
-    <h3>
-      <span>
-          Demo Application (coming soon)
-      </span>
-    </h3>
+    <!-- <h3> -->
+    <!--   <span> -->
+    <!--       Demo Application (coming soon) -->
+    <!--   </span> -->
+    <!-- </h3> -->
 </div>
 
 <br/>
 <br/>
 
 
+> [!WARNING]
+> **Work in progress.** SelfOS is under active development, and the architecture, API surface, and feature set are still evolving.
+
 ### About This Project 🚀
 
 ---
 
-Track the numbers behind your life. SelfOS gives you a place to collect your own data — training, nutrition, habits, measurements — so you can see patterns, measure progress, and understand what changed, what worked, and perhaps why.
+SelfOS is a personal data system for tracking the numbers behind your life — training, nutrition, habits, measurements, and eventually health data from the devices you already use.  The goal is simple: collect your own data, build a history of yourself, and keep that data under your control. SelfOS is designed around a shared Go API and PostgreSQL backend, with multiple clients able to read from and contribute to the same personal record over time.
 
-See [`QUICKSTART.md`](./docs/QUICKSTART.md) for setup, [`CONTEXT.md`](./CONTEXT.md) for architecture and conventions, and [`docs/adr/`](./docs/adr/) for the reasoning behind some deliberately unconventional choices (like a Go API in an otherwise all-TypeScript stack).
+Use [`QUICKSTART.md`](./docs/QUICKSTART.md) to get the project running locally, or see [`CONTEXT.md`](./CONTEXT.md) for architecture, conventions, and development notes.
 
-> [!WARNING]
-> **Work in progress.** SelfOS is under active development, and the architecture, API surface, and feature set are still evolving.
 
 
 <br/>
@@ -45,31 +46,49 @@ See [`QUICKSTART.md`](./docs/QUICKSTART.md) for setup, [`CONTEXT.md`](./CONTEXT.
 ### High-Level Architecture
 
 ---
-The frontend never talks directly to Postgres. Application data flows through the Go API, which owns validation, business rules, and persistence.
+SelfOS is designed around a single backend API shared by multiple clients. The Web, Mobile, and TRMNL clients all communicate with the Go API over HTTP, while the API owns validation, business logic, authentication and persistence. Frontends never talk directly to Postgres. This is the target architecture for the project.
 
 ```text
-React / Vite
-     │
-     │ HTTP / JSON
-     ▼
-   Go API
-     │
-     │ sqlc / pgx
-     ▼
-  PostgreSQL
+┌────────────┐
+│    Web     │────┐
+└────────────┘    │
+                  │
+┌────────────┐    │      ┌────────────┐
+│   Mobile   │────┼─────▶│   Go API   │
+└────────────┘    │      └──────┬─────┘
+                  │             │                          ┌─────────────────────────────┐
+┌────────────┐    │             ├────── Production ──────▶ │ Neon / Self-hosted Postgres │
+│   TRMNL    │────┘             │                          └─────────────────────────────┘
+└────────────┘                  │
+                                │                          ┌─────────────────────────────┐
+                                └────── Development ──────▶│   Local Postgres / Docker   │
+                                                           └─────────────────────────────┘
 ```
+                                                           
+
 
 #### Repository Structure
+
+The repository is intended to grow into a small multi-client monorepo, with deployable applications under apps/, reusable frontend code under packages/, and database concerns kept separately under database/.  The structure below represents the intended direction of the project;
 
 ```text
 SelfOS/
 ├── apps/
-│   ├── web/              # React / Vite frontend
-│   └── api/              # Go REST API
+│   ├── web/              # React / Vite PWA ~ Web client
+│   ├── mobile/           # Expo / React-native ~ Mobile client
+│   ├── trmnl/            # E-ink / Custom plugin ~ TRMNL client
+│   └── api/              # Go / PostgreSQL ~ Backend API
+│
+├── packages/
+│   ├── design-system/
+│   ├── api-client/
+│   └── schemas/
+│
 ├── database/
-│   ├── migrations/       # goose migrations
-│   └── queries/          # sqlc queries
-├── docs/                 # ADRs, quickstart guide
+│   ├── migrations/
+│   └── queries/
+│
+├── docs/
 ├── compose.yaml
 ├── sqlc.yaml
 ├── mise.toml
@@ -80,47 +99,29 @@ SelfOS/
 <br/>
 <br/>
 
-### Incremental by Design
+### Technology Stack
 
 ---
 
-Every domain (Nutrition, Training, Habits, Measurements) starts on in-memory demo data behind a single client seam, and migrates to the real Go API + Postgres one domain at a time — never a big-bang cutover. **Measurements** is the first to go real today; everything else is still demo data, and that's the expected state mid-migration, not a gap.
+#### [Web Client - Frontend](./apps/web)
 
-That seam also means SelfOS can run in two modes from the same codebase: a zero-credential **Demo Mode** (nothing but demo data, nothing to configure — good for a public/portfolio deployment) and a **Personal Mode** where a domain's data is real and persists. See `CONTEXT.md`'s Client Seam / Demo Mode / Personal Mode entries for the full mechanics.
+The frontend web client lives in `apps/web` and is built with React, TypeScript, and Vite. It is intentionally mobile-first: the mobile layout is the product, while desktop simply provides more space around the same narrow application shell.
+
+#### [Go API - Backend](./apps/api)
+
+The backend lives in `apps/api` and is built with Go's standard `net/http`, `sqlc`, and `goose`. It provides the central API shared by SelfOS clients and owns the application's validation, business logic, authentication, and persistence.
+
+#### [PostgreSQL - Database](./database)
+
+The database layer lives in `database` and is built around plain PostgreSQL. Local development runs PostgreSQL through Docker Compose, while hosted production uses [Neon](https://neon.com). The same schema, migrations, and queries are used in both environments.
+
+----
+
+> [!TIP]
+> **Local development**
+>
+> SelfOS uses [Docker Compose](./compose.yaml) to spin up the web client, Go API, and local PostgreSQL database together with a single command. See [`QUICKSTART.md`](./docs/QUICKSTART.md) for the full setup; each application also documents how to run it independently when needed.
+
 
 <br/>
 <br/>
-
-### Tech Stack Overview
-
----
-
-#### Vite Web App
-
-The frontend lives in `apps/web` and is built with React, TypeScript, and Vite.
-
-It is intentionally mobile-first: the mobile layout is the product, while desktop simply provides more space around the same narrow application shell.
-
-Data flows through a single client seam (see "Incremental by Design" above) rather than importing demo or API clients directly, so a feature's code never has to know or care which one it's currently backed by.
-
-#### Go API Backend
-
-The backend lives in `apps/api` and exposes a REST API over HTTP. It handles request processing, validation, application and domain logic, database access, and JSON serialization.
-
-The API uses Go’s standard `net/http` package, `pgx/v5` for PostgreSQL access, `sqlc` to generate type-safe Go code from hand-written SQL, and `goose` to manage database migrations. SQL remains explicit, version-controlled, and close to the data model rather than being hidden behind an ORM.
-
-#### PostgreSQL
-
-SelfOS runs on plain PostgreSQL — no managed-platform lock-in. The Go API is the only thing that talks to the database, and it only ever depends on a `DATABASE_URL`; there's no provider-specific code and no environment branching anywhere in the app.
-
-Local dev runs Postgres via Docker Compose; hosted/production Postgres is [Neon](https://neon.com). See [`QUICKSTART.md`](./docs/QUICKSTART.md) for the local setup.
-
-#### Docker Development Environment
-
-Local development uses Docker Compose for the SelfOS web and API services.
-
-The Go API uses Air for hot reload, while Vite handles frontend hot reload.
-
-#### Auth
-
-Not built yet. The plan is simple single-user auth in front of the Go API — a web session cookie plus per-client bearer tokens — needed before any public deployment. Everything above (Postgres, the client seam, Demo/Personal Mode) works without it today.
