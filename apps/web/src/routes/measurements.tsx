@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { MeasurementDrawer } from "@/components/measurements/measurement-drawer";
+import { MeasurementDrawer } from "@/components/custom/measurement-drawer";
 import { Button } from "@/components/ui/button";
 import { SectionStat } from "@/components/ui/section-stat";
 import type { WeightEntry } from "@/data/schemas/weight";

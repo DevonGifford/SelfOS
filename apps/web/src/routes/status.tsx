@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { HeaderStatus } from "@/components/status/header-status";
-import { HeatmapStatus } from "@/components/status/heatmap-status";
-import { LastSessionStatus } from "@/components/status/last-session-status";
-import { LineChartStatus } from "@/components/status/line-chart-status";
-import { NutritionStatus } from "@/components/status/nutrition-status";
+import { HeaderStatus } from "@/components/custom/header-status";
+import { HeatmapStatus } from "@/components/custom/heatmap-status";
+import { LastSessionStatus } from "@/components/custom/last-session-status";
+import { LineChartStatus } from "@/components/custom/line-chart-status";
+import { NutritionStatus } from "@/components/custom/nutrition-status";
 import { getStatus } from "@/data/client";
 import { useHabitsHistory } from "@/features/habits/use-habits-history";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
