@@ -1,0 +1,3 @@
+# Avoiding Supabase lock-in applies to the database only, not Auth or Storage
+
+The Go API connects to Postgres via a plain `DATABASE_URL`, deliberately avoiding Supabase-specific database APIs so the underlying Postgres host stays portable (Supabase → Neon → AWS → self-hosted) without redesigning the application. This principle stops at the data layer: Supabase Auth and Supabase Storage are used directly, with no abstraction layer over them. Fighting that coupling would buy nothing — a BaaS's auth/storage products are exactly what they're for. Recorded so a future reader doesn't assume the whole vendor is meant to be swappable, or add unnecessary auth/storage abstraction layers.

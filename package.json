@@ -1,0 +1,28 @@
+{
+  "name": "SelfOS",
+  "version": "1.0.0",
+  "description": "Personal logging monorepo for health and progress",
+  "keywords": [],
+  "author": "Devon Gifford",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.3.4",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.3.4",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter ./apps/web dev",
+    "docker:build": "docker compose up --build",
+    "docker:up": "docker compose up",
+    "docker:down": "docker compose down",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "lefthook": "^2.1.12"
+  }
+}
