@@ -20,7 +20,7 @@
     "docker:build": "docker compose up --build",
     "docker:up": "docker compose up",
     "docker:down": "docker compose down",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "lefthook": "^2.1.12"

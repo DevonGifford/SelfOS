@@ -36,7 +36,10 @@ func main() {
 	queries := database.New(pool)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	// Under the /api prefix, not bare /health — every path this server
+	// actually receives arrives with that prefix intact (Vercel's Services
+	// rewrite forwards it unchanged, and so does apps/web's dev proxy).
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
