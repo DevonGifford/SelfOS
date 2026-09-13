@@ -1,0 +1,73 @@
+name: CI
+
+# Verification only — never a deploy step. Vercel's own GitHub integration
+# deploys on push to a connected branch with no workflow code of ours
+# (ticket 06/07 decision); this workflow's only job is to block a PR from
+# merging into staging or main if the checks lefthook already runs locally
+# fail here too.
+on:
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web build
+      - run: pnpm --filter web test
+
+  api:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: selfos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d selfos"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # A real postgres service container, not a skip — the DB-backed tests
+      # under apps/api/internal/database used to t.Skip without this, which
+      # QUICKSTART itself warns "reads as passed if you're not watching."
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/selfos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Migrate test database
+        run: goose -dir database/migrations postgres "$DATABASE_URL" up
+
+      - name: Vet, build, test
+        working-directory: apps/api
+        run: |
+          go vet ./...
+          go build ./...
+          go test ./...

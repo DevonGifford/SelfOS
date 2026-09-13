@@ -42,9 +42,16 @@ func main() {
 	})
 	measurements.NewHandler(queries).Register(mux)
 
+	// Vercel's Go runtime requires the server to listen on PORT; API_ADDR is
+	// this repo's own pre-existing convention (compose.yaml sets it), so it
+	// still wins locally when both happen to be set.
 	addr := os.Getenv("API_ADDR")
 	if addr == "" {
-		addr = ":8080"
+		if port := os.Getenv("PORT"); port != "" {
+			addr = ":" + port
+		} else {
+			addr = ":8080"
+		}
 	}
 
 	log.Printf("listening on %s", addr)

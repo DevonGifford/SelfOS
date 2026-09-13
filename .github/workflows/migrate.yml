@@ -1,0 +1,30 @@
+name: Migrate
+
+# Runs goose against the real target database on every push to staging or
+# main. Vercel has no release-command equivalent (ticket 06 research), so
+# this is that hook's replacement — a CI step, not a manual gate (ticket 07
+# decision §5). Each branch reads its own environment's DATABASE_URL_UNPOOLED
+# secret; goose always uses the direct/unpooled endpoint per Neon's own
+# guidance on schema migrations.
+on:
+  push:
+    branches: [staging, main]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Run migrations
+        run: goose -dir database/migrations postgres "$DATABASE_URL_UNPOOLED" up
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
