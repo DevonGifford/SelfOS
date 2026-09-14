@@ -49,9 +49,14 @@ func testHandler(t *testing.T) *Handler {
 	return NewHandler(database.New(tx))
 }
 
+// noAuth is a passthrough — these tests are about measurement logic, not
+// auth, which has its own tests in internal/auth. Real wiring (main.go)
+// uses auth.Require instead.
+func noAuth(next http.Handler) http.Handler { return next }
+
 func doRequest(h *Handler, method, path string, body any) *httptest.ResponseRecorder {
 	mux := http.NewServeMux()
-	h.Register(mux)
+	h.Register(mux, noAuth)
 
 	var reader *bytes.Reader
 	if body != nil {

@@ -3,7 +3,7 @@ import { CartesianGrid, Line, LineChart, LabelList, XAxis, YAxis } from "rechart
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import type { Weight } from "@/data/schemas/weight";
 
-type LineChartStatusProps = {
+type StatusLineChartProps = {
   entries: Weight;
 };
 
@@ -28,7 +28,7 @@ function getYDomain(entries: Weight): [number, number] {
   return [min - padding, max + padding];
 }
 
-export function LineChartStatus({ entries }: LineChartStatusProps) {
+export function StatusLineChart({ entries }: StatusLineChartProps) {
   if (entries.length === 0) return null;
 
   // Sparse X-axis labels — every tick would clutter a compact chart, so

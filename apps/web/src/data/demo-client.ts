@@ -8,7 +8,6 @@ import { demoWeight } from "@/data/data-demo/weight";
 import { HabitsHistorySchema } from "@/data/schemas/habits-history";
 import { HabitsSchema } from "@/data/schemas/habits";
 import { NutritionSchema } from "@/data/schemas/nutrition";
-import { StatusSchema } from "@/data/schemas/status";
 import { TrainingSchema } from "@/data/schemas/training";
 import { TrainingHistorySchema } from "@/data/schemas/training-history";
 import { WeightSchema } from "@/data/schemas/weight";
@@ -35,30 +34,4 @@ export async function getHabitsHistory() {
 
 export async function getMeasurements() {
   return WeightSchema.parse(demoWeight);
-}
-
-export async function getStatus() {
-  const [nutrition, training, habits] = await Promise.all([
-    getNutrition(),
-    getTraining(),
-    getHabits(),
-  ]);
-
-  return StatusSchema.parse({
-    training: {
-      type: training.type,
-      focus: training.split,
-      tomorrow: training.tomorrow,
-    },
-    nutrition: {
-      calories: nutrition.totals.calories,
-      protein: nutrition.totals.protein,
-      carbs: nutrition.totals.carbs,
-      fat: nutrition.totals.fat,
-    },
-    habits: {
-      completed: habits.filter((habit) => habit.completedToday).length,
-      total: habits.length,
-    },
-  });
 }

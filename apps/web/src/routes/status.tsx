@@ -1,59 +1,32 @@
-import { useQuery } from "@tanstack/react-query";
-
-import { HeaderStatus } from "@/components/custom/header-status";
-import { HeatmapStatus } from "@/components/custom/heatmap-status";
-import { LastSessionStatus } from "@/components/custom/last-session-status";
-import { LineChartStatus } from "@/components/custom/line-chart-status";
-import { NutritionStatus } from "@/components/custom/nutrition-status";
-import { getStatus } from "@/data/client";
-import { useHabitsHistory } from "@/features/habits/use-habits-history";
-import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
-import { useMeasurements } from "@/features/measurements/use-measurements";
-import { selectLastComparableSession } from "@/features/training/select-last-comparable-session";
-import { useTrainingHistory } from "@/features/training/use-training-history";
+import { StatusHeader } from "@/features/status/header";
+import { StatusHeatmap } from "@/features/status/heatmap";
+import { StatusLastSession } from "@/features/status/last-session";
+import { StatusLineChart } from "@/features/status/line-chart";
+import { StatusNutrition } from "@/features/status/nutrition";
+import { useStatus } from "@/features/status/use-status";
 
 export function StatusPage() {
-  const statusQuery = useQuery({ queryKey: ["status"], queryFn: getStatus });
-  const historyQuery = useHabitsHistory();
-  const trainingHistoryQuery = useTrainingHistory();
-  const measurementsQuery = useMeasurements();
+  const { data } = useStatus();
 
-  if (
-    !statusQuery.data ||
-    !historyQuery.data ||
-    !trainingHistoryQuery.data ||
-    !measurementsQuery.data
-  )
-    return null;
+  if (!data) return null;
 
-  const { data } = statusQuery;
-  const lastSession = selectLastComparableSession(
-    trainingHistoryQuery.data,
-    data.training.type,
-  );
-
-  // Measurements is real now (see the Client Seam) — its "current weight"
-  // is derived here from the actual entries, not from getStatus()'s demo
-  // aggregate, and uses the same day-minimum rule everywhere a single
-  // weight number is shown (this ring, the trend chart, /measurements).
-  const dailyMinimums = selectDailyMinimums(measurementsQuery.data);
-  const latestKg = dailyMinimums.at(-1)?.kg ?? 0;
+  const latestKg = data.dailyMinimums.at(-1)?.kg ?? 0;
 
   return (
     <div className="p-4">
-      <HeaderStatus
-        training={data.training}
+      <StatusHeader
+        training={data.status.training}
         measurementsKg={latestKg}
-        habits={data.habits}
+        habits={data.status.habits}
       />
 
-      <NutritionStatus nutrition={data.nutrition} />
+      <StatusNutrition nutrition={data.status.nutrition} />
 
-      <LastSessionStatus session={lastSession} today={data.training.type} />
+      <StatusLastSession session={data.lastSession} today={data.status.training.type} />
 
-      <LineChartStatus entries={dailyMinimums} />
+      <StatusLineChart entries={data.dailyMinimums} />
 
-      <HeatmapStatus entries={historyQuery.data} />
+      <StatusHeatmap entries={data.habitsHistory} />
     </div>
   );
 }

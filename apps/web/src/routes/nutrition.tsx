@@ -1,3 +1,4 @@
+import { DemoDataBadge } from "@/components/ui/demo-data-badge";
 import { SectionStat } from "@/components/ui/section-stat";
 import { useNutrition } from "@/features/nutrition/use-nutrition";
 
@@ -10,12 +11,16 @@ export function NutritionPage() {
 
   return (
     <div className="p-4">
-      <header className="mb-8">
-        <p className="font-mono text-xs uppercase tracking-widest">
-          SELF/OS
-        </p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest">
+            SELF/OS
+          </p>
 
-        <h1 className="mt-2 text-3xl font-semibold">Nutrition</h1>
+          <h1 className="mt-2 text-3xl font-semibold">Nutrition</h1>
+        </div>
+
+        <DemoDataBadge />
       </header>
 
       <SectionStat

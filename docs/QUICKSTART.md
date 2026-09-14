@@ -47,7 +47,7 @@ sqlc generate
 
 ## Tests
 
-Frontend tests cover the React application and UI behavior, while backend tests cover the Go API and database interactions.
+A small, deliberately minimal suite — enough to catch "I broke something else while touching this," not exhaustive coverage. Frontend tests are plain unit tests over pure functions (selectors, `deriveStatus`, form validation) — no component or UI testing, nothing touches the DOM. Backend tests cover the Go API's handlers and database queries, including auth.
 
 Frontend:
 ```bash

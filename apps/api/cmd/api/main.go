@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/DevonGifford/SelfOS/apps/api/internal/auth"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/database"
 	"github.com/DevonGifford/SelfOS/apps/api/internal/measurements"
 )
@@ -19,6 +20,16 @@ func main() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		log.Fatal("DATABASE_URL is not set")
+	}
+
+	passwordHash := os.Getenv("AUTH_PASSWORD_HASH")
+	if passwordHash == "" {
+		log.Fatal("AUTH_PASSWORD_HASH is not set")
+	}
+
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		log.Fatal("SESSION_SECRET is not set")
 	}
 
 	ctx := context.Background()
@@ -36,15 +47,27 @@ func main() {
 	queries := database.New(pool)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	// Under the /api prefix, not bare /health — every path this server
+	// actually receives arrives with that prefix intact (Vercel's Services
+	// rewrite forwards it unchanged, and so does apps/web's dev proxy).
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
-	measurements.NewHandler(queries).Register(mux)
+	auth.NewHandler(passwordHash, []byte(sessionSecret)).Register(mux)
+	requireAuth := auth.Require([]byte(sessionSecret), queries)
+	measurements.NewHandler(queries).Register(mux, requireAuth)
 
+	// Vercel's Go runtime requires the server to listen on PORT; API_ADDR is
+	// this repo's own pre-existing convention (compose.yaml sets it), so it
+	// still wins locally when both happen to be set.
 	addr := os.Getenv("API_ADDR")
 	if addr == "" {
-		addr = ":8080"
+		if port := os.Getenv("PORT"); port != "" {
+			addr = ":" + port
+		} else {
+			addr = ":8080"
+		}
 	}
 
 	log.Printf("listening on %s", addr)

@@ -1,7 +1,8 @@
+import { DemoDataBadge } from "@/components/ui/demo-data-badge";
 import type { HabitHistoryEntry } from "@/data/schemas/habits-history";
 import { cn } from "@/lib/utils";
 
-type HeatmapStatusProps = {
+type StatusHeatmapProps = {
   entries: HabitHistoryEntry[];
 };
 
@@ -33,10 +34,13 @@ function formatDate(dateStr: string) {
   return `${MONTH_LABELS[date.getMonth()]} ${date.getDate()}`;
 }
 
-export function HeatmapStatus({ entries }: HeatmapStatusProps) {
+export function StatusHeatmap({ entries }: StatusHeatmapProps) {
   return (
     <section className="mt-8 border-t pt-4">
-      <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Habits Graph</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Habits Graph</h2>
+        <DemoDataBadge />
+      </div>
       <div className="mt-4">
         <HabitHeatmap entries={entries} />
       </div>

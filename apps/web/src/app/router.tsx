@@ -1,16 +1,38 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
 import { AppShell } from "@/app/app-shell";
+import { checkSession } from "@/data/auth-client";
 import { HabitsPage } from "@/routes/habits";
+import { LoginPage } from "@/routes/login";
 import { MeasurementsPage } from "@/routes/measurements";
 import { NutritionPage } from "@/routes/nutrition";
 import { StatusPage } from "@/routes/status";
 import { TrainingPage } from "@/routes/training";
 
+// Runs before AppShell renders, so there's no shell-flash-then-bounce
+// (ticket 09 §3). A real 401 already triggers a hard redirect inside
+// parseOrThrow (data/http.ts) before this ever sees the rejection; any
+// other failure is a network error (offline, scope B), not an expired
+// session, so the loader resolves normally and lets the shell render from
+// the service-worker-precached shell instead of blocking on it.
+async function sessionLoader() {
+  try {
+    await checkSession();
+  } catch {
+    // Swallow here — see comment above for why.
+  }
+  return null;
+}
+
 export const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
   {
     path: "/",
     element: <AppShell />,
+    loader: sessionLoader,
     children: [
       {
         index: true,

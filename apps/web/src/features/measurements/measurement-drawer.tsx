@@ -8,13 +8,14 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ApiError } from "@/data/api-client";
+import { ApiError } from "@/data/http";
 import type { WeightEntry } from "@/data/schemas/weight";
 import {
   useCreateMeasurement,
   useDeleteMeasurement,
   useUpdateMeasurement,
 } from "@/features/measurements/use-measurement-mutations";
+import { validate } from "@/features/measurements/validate";
 
 type MeasurementDrawerProps = {
   open: boolean;
@@ -28,23 +29,6 @@ function todayString() {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function validate(date: string, kg: string): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  const kgNumber = Number(kg);
-  if (kg.trim() === "" || Number.isNaN(kgNumber) || kgNumber <= 0) {
-    errors.kg = "must be positive";
-  }
-
-  if (date.trim() === "") {
-    errors.date = "required";
-  } else if (date > todayString()) {
-    errors.date = "cannot be in the future";
-  }
-
-  return errors;
 }
 
 // The caller remounts this component (via `key`) each time the drawer
@@ -64,7 +48,7 @@ export function MeasurementDrawer({ open, onOpenChange, entry }: MeasurementDraw
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    const validationErrors = validate(date, kg);
+    const validationErrors = validate(date, kg, todayString());
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
