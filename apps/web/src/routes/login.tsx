@@ -7,7 +7,7 @@ import { LoginForm } from "@/features/auth/login-form";
 
 export function LoginPage() {
   const [authenticating, setAuthenticating] = useState(false);
-  const { displayedLines, progress } = useBootSequence(() => window.location.assign("/home"));
+  const { displayedLines, progress } = useBootSequence(authenticating, () => window.location.assign("/home"));
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center gap-8 p-6">

@@ -26,12 +26,20 @@ function getCharDelay(char: string) {
   return 4 + Math.random() * 4;
 }
 
-export function useBootSequence(onDone: () => void) {
+// `enabled` must gate both effects below, not just whether the caller
+// happens to render the visual output — this hook previously ran
+// unconditionally on mount (only the UI was hidden), so it silently
+// navigated to /home ~3s after every /login page load regardless of
+// whether anyone had logged in. With no real session, /home's loader 401s
+// and bounces back to /login, which remounts and repeats — an infinite
+// redirect loop invisible until you watch the Network tab.
+export function useBootSequence(enabled: boolean, onDone: () => void) {
   const [lineIndex, setLineIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     if (lineIndex >= LINES.length) return;
 
     const line = LINES[lineIndex];
@@ -54,15 +62,16 @@ export function useBootSequence(onDone: () => void) {
       setCharIndex(0);
     }, LINE_PAUSES[lineIndex] ?? 100);
     return () => clearTimeout(timer);
-  }, [lineIndex, charIndex]);
+  }, [enabled, lineIndex, charIndex]);
 
   // onDone is coordinated off the same `progress` state the bar renders from,
   // not a second independent timer — it only fires once progress hits 100.
   useEffect(() => {
+    if (!enabled) return;
     if (progress !== 100) return;
     const timer = setTimeout(onDone, 300);
     return () => clearTimeout(timer);
-  }, [progress, onDone]);
+  }, [enabled, progress, onDone]);
 
   const completed = LINES.slice(0, lineIndex);
   const displayedLines =
