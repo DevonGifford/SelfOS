@@ -53,6 +53,15 @@ func (ns NullTokenScope) Value() (driver.Value, error) {
 	return string(ns.TokenScope), nil
 }
 
+type Configuration struct {
+	ID                      pgtype.UUID        `json:"id"`
+	NutritionCaloriesTarget pgtype.Numeric     `json:"nutrition_calories_target"`
+	NutritionProteinTarget  pgtype.Numeric     `json:"nutrition_protein_target"`
+	NutritionCarbsTarget    pgtype.Numeric     `json:"nutrition_carbs_target"`
+	NutritionFatTarget      pgtype.Numeric     `json:"nutrition_fat_target"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+}
+
 type Food struct {
 	ID                 pgtype.UUID        `json:"id"`
 	Name               string             `json:"name"`

@@ -11,7 +11,7 @@ import { useTrainingHistory } from "@/features/training/use-training-history";
 
 import { deriveStatus } from "./derive-status";
 
-// The single hook routes/status.tsx calls — same {data, isPending, isError}
+// The single hook routes/home.tsx calls — same {data, isPending, isError}
 // shape as every other domain hook (features/*/use-*.ts), even though this
 // one composes seven queries internally. This is what makes Status a module
 // rather than a route: the orchestration lives here, once, not in the page.

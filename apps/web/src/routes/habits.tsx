@@ -13,6 +13,7 @@ import { useReorderHabits } from "@/features/habits/use-habit-mutations";
 import { useHabits } from "@/features/habits/use-habits";
 import { useToggleHabitEntry } from "@/features/habits/use-toggle-habit-entry";
 import { todayString } from "@/lib/date";
+import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
 
 export function HabitsPage() {
   const habitsQuery = useHabits();
@@ -24,6 +25,8 @@ export function HabitsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerKey, setDrawerKey] = useState(0);
   const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
+
+  useOpenAddFromQuery(openAddDrawer);
 
   if (!habitsQuery.data || !entriesQuery.data) return null;
 

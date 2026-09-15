@@ -18,7 +18,10 @@ import (
 
 // testHandler opens a connection, begins a transaction, and rolls it back
 // at the end of the test — no committed writes, mirrors measurements'
-// handlers_test.go.
+// handlers_test.go. Also clears this domain's tables inside the
+// transaction before returning, so tests get a deterministic empty view
+// regardless of real rows logged through the app locally — the delete
+// itself rolls back with everything else, so real data is untouched.
 func testHandler(t *testing.T) *Handler {
 	t.Helper()
 
@@ -47,6 +50,10 @@ func testHandler(t *testing.T) *Handler {
 		_ = tx.Rollback(context.Background())
 		_ = conn.Close(context.Background())
 	})
+
+	if _, err := tx.Exec(context.Background(), `delete from habit_entries; delete from habits;`); err != nil {
+		t.Fatalf("clear habits tables: %v", err)
+	}
 
 	return NewHandler(database.New(tx))
 }

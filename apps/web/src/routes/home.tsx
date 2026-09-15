@@ -12,7 +12,7 @@ function daysRemainingInYear(from = new Date()) {
   return Math.round((endOfYear.getTime() - startOfToday.getTime()) / msPerDay);
 }
 
-export function StatusPage() {
+export function HomePage() {
   const { data } = useStatus();
 
   if (!data) return null;

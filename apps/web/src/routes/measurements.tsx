@@ -9,6 +9,7 @@ import { MeasurementDrawer } from "@/features/measurements/measurement-drawer";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
 import { WeightSparkline } from "@/features/measurements/weight-sparkline";
+import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
 
 const PAGE_SIZE = 30;
 
@@ -94,6 +95,8 @@ export function MeasurementsPage() {
     setDrawerOpen(true);
     setDrawerKey((key) => key + 1);
   }
+
+  useOpenAddFromQuery(openAddDrawer);
 
   function openEditDrawer(entry: WeightEntry) {
     setEditingEntry(entry);

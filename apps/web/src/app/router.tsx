@@ -2,11 +2,14 @@ import { createBrowserRouter, Navigate } from "react-router";
 
 import { AppShell } from "@/app/app-shell";
 import { checkSession } from "@/data/auth-client";
+import { isGuestSession } from "@/data/guest";
+import { ComingSoonPage } from "@/routes/coming-soon";
 import { HabitsPage } from "@/routes/habits";
+import { HomePage } from "@/routes/home";
 import { LoginPage } from "@/routes/login";
 import { MeasurementsPage } from "@/routes/measurements";
 import { NutritionPage } from "@/routes/nutrition";
-import { StatusPage } from "@/routes/status";
+import { SettingsPage } from "@/routes/settings";
 import { TrainingPage } from "@/routes/training";
 
 // Runs before AppShell renders, so there's no shell-flash-then-bounce
@@ -15,7 +18,13 @@ import { TrainingPage } from "@/routes/training";
 // other failure is a network error (offline, scope B), not an expired
 // session, so the loader resolves normally and lets the shell render from
 // the service-worker-precached shell instead of blocking on it.
+//
+// A guest session never sets the real cookie, so checkSession() would
+// always 401 and parseOrThrow would bounce straight back to /login before
+// this function's own try/catch ever runs — skip it entirely for guests.
 async function sessionLoader() {
+  if (isGuestSession()) return null;
+
   try {
     await checkSession();
   } catch {
@@ -36,11 +45,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/status" replace />,
+        element: <Navigate to="/home" replace />,
       },
       {
-        path: "status",
-        element: <StatusPage />,
+        path: "home",
+        element: <HomePage />,
       },
       {
         path: "nutrition",
@@ -57,6 +66,34 @@ export const router = createBrowserRouter([
       {
         path: "measurements",
         element: <MeasurementsPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+      },
+      {
+        path: "habits/history",
+        element: (
+          <ComingSoonPage title="Habits History" description="A dedicated view of your habit streaks and completion history over time." />
+        ),
+      },
+      {
+        path: "nutrition/history",
+        element: (
+          <ComingSoonPage title="Nutrition Trends" description="Macro trends over time — calories, protein, carbs, and fat across days and weeks." />
+        ),
+      },
+      {
+        path: "training/history",
+        element: (
+          <ComingSoonPage title="Training History" description="A full log of past sessions, once workout logging itself is built." />
+        ),
+      },
+      {
+        path: "measurements/history",
+        element: (
+          <ComingSoonPage title="Weight History" description="A dedicated trend view — the Measurements page's own trend and log stay where they are for now." />
+        ),
       },
     ],
   },

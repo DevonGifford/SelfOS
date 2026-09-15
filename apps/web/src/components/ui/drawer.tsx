@@ -161,6 +161,21 @@ function DrawerContent({
   )
 }
 
+function DrawerSwipeArea({
+  className,
+  ...props
+}: DrawerPrimitive.SwipeArea.Props) {
+  return (
+    <div className="pointer-events-none fixed inset-y-0 bottom-16 left-0 right-0 z-50 mx-auto w-full max-w-[430px]">
+      <DrawerPrimitive.SwipeArea
+        data-slot="drawer-swipe-area"
+        className={cn("pointer-events-auto absolute inset-y-0 left-0 w-5", className)}
+        {...props}
+      />
+    </div>
+  )
+}
+
 function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -215,6 +230,7 @@ export {
   DrawerPortal,
   DrawerOverlay,
   DrawerSwipeHandle,
+  DrawerSwipeArea,
   DrawerTrigger,
   DrawerClose,
   DrawerContent,

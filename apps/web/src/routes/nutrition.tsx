@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
 import { SectionStat } from "@/components/ui/section-stat";
 import type { FoodEntry } from "@/data/schemas/food-entries";
+import { selectNutritionTargets } from "@/features/configuration/select-nutrition-targets";
+import { useConfiguration } from "@/features/configuration/use-configuration";
 import { EntryDrawer } from "@/features/nutrition/entry-drawer";
 import { FoodDrawer } from "@/features/nutrition/food-drawer";
 import { selectDailyTotals } from "@/features/nutrition/select-daily-totals";
 import { useFoodEntries } from "@/features/nutrition/use-food-entries";
 import { useFoods } from "@/features/nutrition/use-foods";
 import { todayString } from "@/lib/date";
+import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
 import { StatusNutrition } from "@/features/status/nutrition";
 
 function macroProgress(consumed: number, target: number) {
@@ -19,6 +22,7 @@ function macroProgress(consumed: number, target: number) {
 export function NutritionPage() {
   const entriesQuery = useFoodEntries();
   const foodsQuery = useFoods();
+  const configQuery = useConfiguration();
 
   const [addOpen, setAddOpen] = useState(false);
   const [addKey, setAddKey] = useState(0);
@@ -26,13 +30,15 @@ export function NutritionPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editKey, setEditKey] = useState(0);
 
-  if (!entriesQuery.data || !foodsQuery.data) return null;
+  useOpenAddFromQuery(openAddDrawer);
+
+  if (!entriesQuery.data || !foodsQuery.data || !configQuery.data) return null;
 
   const entries = entriesQuery.data;
   const foods = foodsQuery.data;
   const today = todayString();
 
-  const data = selectDailyTotals(entries, today);
+  const data = selectDailyTotals(entries, today, selectNutritionTargets(configQuery.data));
   const todaysEntries = entries.filter((entry) => entry.date === today);
 
   function openAddDrawer() {
