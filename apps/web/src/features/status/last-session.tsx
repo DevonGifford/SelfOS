@@ -150,7 +150,7 @@ export function StatusLastSession({ session, today }: StatusLastSessionProps) {
     <section className="mt-8 border-t pt-2">
       <div className="flex items-center justify-between">
         <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Last Session</h2>
-        <DemoDataBadge />
+        <DemoDataBadge domain="training" />
       </div>
 
       {!session ? (

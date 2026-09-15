@@ -1,3 +1,5 @@
+import { todayString } from "@/lib/date";
+import { useHabitEntries } from "@/features/habits/use-habit-entries";
 import { useHabits } from "@/features/habits/use-habits";
 import { useHabitsHistory } from "@/features/habits/use-habits-history";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
@@ -11,13 +13,14 @@ import { deriveStatus } from "./derive-status";
 
 // The single hook routes/status.tsx calls — same {data, isPending, isError}
 // shape as every other domain hook (features/*/use-*.ts), even though this
-// one composes six queries internally. This is what makes Status a module
+// one composes seven queries internally. This is what makes Status a module
 // rather than a route: the orchestration lives here, once, not in the page.
 export function useStatus() {
   const trainingQuery = useTraining();
   const trainingHistoryQuery = useTrainingHistory();
   const nutritionQuery = useNutrition();
   const habitsQuery = useHabits();
+  const habitEntriesQuery = useHabitEntries();
   const habitsHistoryQuery = useHabitsHistory();
   const measurementsQuery = useMeasurements();
 
@@ -26,6 +29,7 @@ export function useStatus() {
     trainingHistoryQuery,
     nutritionQuery,
     habitsQuery,
+    habitEntriesQuery,
     habitsHistoryQuery,
     measurementsQuery,
   ];
@@ -38,10 +42,17 @@ export function useStatus() {
     trainingHistoryQuery.data &&
     nutritionQuery.data &&
     habitsQuery.data &&
+    habitEntriesQuery.data &&
     habitsHistoryQuery.data &&
     measurementsQuery.data
       ? {
-          status: deriveStatus(trainingQuery.data, nutritionQuery.data, habitsQuery.data),
+          status: deriveStatus(
+            trainingQuery.data,
+            nutritionQuery.data,
+            habitsQuery.data,
+            habitEntriesQuery.data,
+            todayString(),
+          ),
           dailyMinimums: selectDailyMinimums(measurementsQuery.data),
           lastSession: selectLastComparableSession(
             trainingHistoryQuery.data,

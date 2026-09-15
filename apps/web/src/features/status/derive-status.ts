@@ -1,3 +1,5 @@
+import { selectActiveCompletionCount } from "@/features/habits/select-completed-today";
+import type { HabitEntries } from "@/data/schemas/habit-entries";
 import type { Habits } from "@/data/schemas/habits";
 import type { Nutrition } from "@/data/schemas/nutrition";
 import type { Status } from "@/data/schemas/status";
@@ -8,7 +10,13 @@ import type { Training } from "@/data/schemas/training";
 // itself, so it stays correct as each domain migrates to real data one at
 // a time instead of silently keeping a stale aggregate for whichever
 // domain hasn't gone real yet.
-export function deriveStatus(training: Training, nutrition: Nutrition, habits: Habits): Status {
+export function deriveStatus(
+  training: Training,
+  nutrition: Nutrition,
+  habits: Habits,
+  habitEntries: HabitEntries,
+  today: string,
+): Status {
   return {
     training: {
       type: training.type,
@@ -21,9 +29,6 @@ export function deriveStatus(training: Training, nutrition: Nutrition, habits: H
       carbs: nutrition.totals.carbs,
       fat: nutrition.totals.fat,
     },
-    habits: {
-      completed: habits.filter((habit) => habit.completedToday).length,
-      total: habits.length,
-    },
+    habits: selectActiveCompletionCount(habits, habitEntries, today),
   };
 }

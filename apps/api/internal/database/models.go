@@ -53,6 +53,45 @@ func (ns NullTokenScope) Value() (driver.Value, error) {
 	return string(ns.TokenScope), nil
 }
 
+type Food struct {
+	ID                 pgtype.UUID        `json:"id"`
+	Name               string             `json:"name"`
+	ServingLabel       string             `json:"serving_label"`
+	CaloriesPerServing pgtype.Numeric     `json:"calories_per_serving"`
+	ProteinPerServing  pgtype.Numeric     `json:"protein_per_serving"`
+	CarbsPerServing    pgtype.Numeric     `json:"carbs_per_serving"`
+	FatPerServing      pgtype.Numeric     `json:"fat_per_serving"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+}
+
+type FoodEntry struct {
+	ID        pgtype.UUID        `json:"id"`
+	FoodID    pgtype.UUID        `json:"food_id"`
+	Name      string             `json:"name"`
+	Quantity  pgtype.Numeric     `json:"quantity"`
+	Calories  pgtype.Numeric     `json:"calories"`
+	Protein   pgtype.Numeric     `json:"protein"`
+	Carbs     pgtype.Numeric     `json:"carbs"`
+	Fat       pgtype.Numeric     `json:"fat"`
+	Date      pgtype.Date        `json:"date"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Habit struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Active    bool               `json:"active"`
+	Position  int32              `json:"position"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type HabitEntry struct {
+	ID        pgtype.UUID        `json:"id"`
+	HabitID   pgtype.UUID        `json:"habit_id"`
+	Date      pgtype.Date        `json:"date"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Measurement struct {
 	ID        pgtype.UUID        `json:"id"`
 	Date      pgtype.Date        `json:"date"`
