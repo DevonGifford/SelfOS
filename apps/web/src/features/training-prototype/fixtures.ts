@@ -1,50 +1,127 @@
-// PROTOTYPE FIXTURES — throwaway, answers ticket 02 on .scratch/training-feature/map.md.
-// Not real schemas. Do not import from real feature code.
+// PROTOTYPE FIXTURES — throwaway, answers tickets 02 and 04 on
+// .scratch/training-feature/map.md. Not real schemas. Do not import from
+// real feature code.
 
 export type ExerciseType = "strength" | "cardio";
-export type Category = "push" | "pull" | "legs" | "cardio" | "freestyle";
 
-export const CATEGORY_LABEL: Record<Category, string> = {
+// The 4 real Workout Types — Exercises and Templates only ever carry one of
+// these. Freestyle is a 5th value on Sessions only (SessionType below), per
+// ticket 01's amendment: no Exercise or Template is inherently "Freestyle".
+export type WorkoutType = "push" | "pull" | "legs" | "cardio";
+export type SessionType = WorkoutType | "freestyle";
+
+export const WORKOUT_TYPE_LABEL: Record<WorkoutType, string> = {
   push: "Push",
   pull: "Pull",
   legs: "Legs",
   cardio: "Cardio",
+};
+
+export const SESSION_TYPE_LABEL: Record<SessionType, string> = {
+  ...WORKOUT_TYPE_LABEL,
   freestyle: "Freestyle",
+};
+
+export const WORKOUT_TYPE_SUBTITLE: Record<WorkoutType, string> = {
+  push: "Chest · Shoulders · Triceps",
+  pull: "Back · Biceps",
+  legs: "Quads · Hamstrings · Calves",
+  cardio: "Cardio · Core",
 };
 
 export type Exercise = {
   id: string;
   name: string;
   type: ExerciseType;
-  category: Category;
+  workoutType: WorkoutType;
 };
 
 export const EXERCISES: Exercise[] = [
-  { id: "bench", name: "Bench Press", type: "strength", category: "push" },
-  { id: "ohp", name: "Overhead Press", type: "strength", category: "push" },
-  { id: "incline-db", name: "Incline Dumbbell Press", type: "strength", category: "push" },
-  { id: "lateral-raise", name: "Lateral Raise", type: "strength", category: "push" },
-  { id: "pullup", name: "Pull-up", type: "strength", category: "pull" },
-  { id: "row", name: "Barbell Row", type: "strength", category: "pull" },
-  { id: "lat-pulldown", name: "Lat Pulldown", type: "strength", category: "pull" },
-  { id: "squat", name: "Back Squat", type: "strength", category: "legs" },
-  { id: "rdl", name: "Romanian Deadlift", type: "strength", category: "legs" },
-  { id: "leg-press", name: "Leg Press", type: "strength", category: "legs" },
-  { id: "treadmill", name: "Treadmill Run", type: "cardio", category: "cardio" },
-  { id: "row-erg", name: "Row Erg", type: "cardio", category: "cardio" },
+  { id: "bench", name: "Bench Press", type: "strength", workoutType: "push" },
+  { id: "ohp", name: "Overhead Press", type: "strength", workoutType: "push" },
+  { id: "incline-db", name: "Incline Dumbbell Press", type: "strength", workoutType: "push" },
+  { id: "lateral-raise", name: "Lateral Raise", type: "strength", workoutType: "push" },
+  { id: "dips", name: "Dips", type: "strength", workoutType: "push" },
+  { id: "pullup", name: "Pull-up", type: "strength", workoutType: "pull" },
+  { id: "row", name: "Barbell Row", type: "strength", workoutType: "pull" },
+  { id: "lat-pulldown", name: "Lat Pulldown", type: "strength", workoutType: "pull" },
+  { id: "squat", name: "Back Squat", type: "strength", workoutType: "legs" },
+  { id: "rdl", name: "Romanian Deadlift", type: "strength", workoutType: "legs" },
+  { id: "leg-press", name: "Leg Press", type: "strength", workoutType: "legs" },
+  { id: "treadmill", name: "Treadmill Run", type: "cardio", workoutType: "cardio" },
+  { id: "row-erg", name: "Row Erg", type: "cardio", workoutType: "cardio" },
 ];
 
 export type Template = {
   id: string;
   name: string;
-  category: Category;
+  workoutType: WorkoutType;
   exerciseIds: string[];
+  isDefault: boolean;
+  archived: boolean;
 };
 
-export const TEMPLATES: Template[] = [
-  { id: "tpl-push", name: "Push Day", category: "push", exerciseIds: ["bench", "ohp", "incline-db", "lateral-raise"] },
-  { id: "tpl-pull", name: "Pull Day", category: "pull", exerciseIds: ["pullup", "row", "lat-pulldown"] },
-  { id: "tpl-legs", name: "Leg Day", category: "legs", exerciseIds: ["squat", "rdl", "leg-press"] },
+// Matches the brief's own worked example: Push gets a default + 2
+// alternates, Pull gets a default + 1 alternate, Legs/Cardio just a
+// default each — enough to exercise every picker state (default only,
+// default + alternates) without padding the fixture pointlessly.
+export const INITIAL_TEMPLATES: Template[] = [
+  {
+    id: "tpl-push-day",
+    name: "Push Day",
+    workoutType: "push",
+    exerciseIds: ["bench", "ohp", "incline-db", "lateral-raise"],
+    isDefault: true,
+    archived: false,
+  },
+  {
+    id: "tpl-push-heavy",
+    name: "Push Heavy",
+    workoutType: "push",
+    exerciseIds: ["bench", "ohp", "dips"],
+    isDefault: false,
+    archived: false,
+  },
+  {
+    id: "tpl-push-light",
+    name: "Push Light",
+    workoutType: "push",
+    exerciseIds: ["incline-db", "lateral-raise", "dips"],
+    isDefault: false,
+    archived: false,
+  },
+  {
+    id: "tpl-pull-day",
+    name: "Pull Day",
+    workoutType: "pull",
+    exerciseIds: ["pullup", "row", "lat-pulldown"],
+    isDefault: true,
+    archived: false,
+  },
+  {
+    id: "tpl-pull-heavy",
+    name: "Pull Heavy",
+    workoutType: "pull",
+    exerciseIds: ["row", "pullup"],
+    isDefault: false,
+    archived: false,
+  },
+  {
+    id: "tpl-legs-day",
+    name: "Leg Day",
+    workoutType: "legs",
+    exerciseIds: ["squat", "rdl", "leg-press"],
+    isDefault: true,
+    archived: false,
+  },
+  {
+    id: "tpl-cardio-day",
+    name: "Cardio Day",
+    workoutType: "cardio",
+    exerciseIds: ["treadmill", "row-erg"],
+    isDefault: true,
+    archived: false,
+  },
 ];
 
 // Widened per ticket 01's amendment: Strong's reference UI treats a drop set

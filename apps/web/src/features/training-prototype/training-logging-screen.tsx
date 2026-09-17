@@ -27,14 +27,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import type { Category, Exercise, LoggedSet, Scenario, SetType } from "@/features/training-prototype/fixtures";
+import type { Exercise, LoggedSet, Scenario, SetType, WorkoutType } from "@/features/training-prototype/fixtures";
 import {
-  CATEGORY_LABEL,
   LAST_SESSION_SETS,
+  SESSION_TYPE_LABEL,
   SET_TYPE_BADGE,
   SET_TYPE_COLOR,
   SET_TYPE_LABEL,
-  TEMPLATES,
+  WORKOUT_TYPE_LABEL,
+  WORKOUT_TYPE_SUBTITLE,
   formatSetBase,
 } from "@/features/training-prototype/fixtures";
 import { ExerciseMenu } from "@/features/training-prototype/exercise-menu";
@@ -42,28 +43,26 @@ import { ExercisePicker } from "@/features/training-prototype/exercise-picker";
 import { EmptyBlock, ErrorBlock, LoadingSkeleton } from "@/features/training-prototype/load-states";
 import { NoteEditorDialog, NotePreview } from "@/features/training-prototype/note-field";
 import { RestTimer } from "@/features/training-prototype/rest-timer";
+import { SaveTemplateDialog } from "@/features/training-prototype/save-template-dialog";
 import { SessionMenu } from "@/features/training-prototype/session-menu";
+import { StartWorkoutPicker } from "@/features/training-prototype/start-workout-picker";
+import { TemplateManager } from "@/features/training-prototype/template-manager";
 import { useWorkoutSessionState } from "@/features/training-prototype/use-workout-session-state";
 
-const CATEGORIES: Category[] = ["push", "pull", "legs", "cardio", "freestyle"];
+const WORKOUT_TYPES: WorkoutType[] = ["push", "pull", "legs", "cardio"];
 
 export function TrainingLoggingScreen({ scenario }: { scenario: Scenario }) {
   const s = useWorkoutSessionState();
 
-  if (s.step === "start") return <StartScreen scenario={scenario} onStartTemplate={s.startFromTemplate} onStartFreestyle={s.startFreestyle} />;
+  if (s.step === "start") return <StartScreen scenario={scenario} s={s} />;
   if (s.step === "finished") return <FinishedScreen s={s} />;
   return <LoggingScreen s={s} />;
 }
 
-function StartScreen({
-  scenario,
-  onStartTemplate,
-  onStartFreestyle,
-}: {
-  scenario: Scenario;
-  onStartTemplate: (id: string) => void;
-  onStartFreestyle: (cat: Category) => void;
-}) {
+function StartScreen({ scenario, s }: { scenario: Scenario; s: ReturnType<typeof useWorkoutSessionState> }) {
+  const [pickerFor, setPickerFor] = useState<WorkoutType | null>(null);
+  const [managerOpen, setManagerOpen] = useState(false);
+
   if (scenario === "loading") return <LoadingSkeleton />;
   if (scenario === "error") return <ErrorBlock />;
 
@@ -77,23 +76,65 @@ function StartScreen({
       {scenario === "empty" ? (
         <EmptyBlock />
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {CATEGORIES.map((cat) => {
-            const templates = TEMPLATES.filter((t) => t.category === cat);
-            return (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            {WORKOUT_TYPES.map((type) => (
               <button
-                key={cat}
+                key={type}
                 type="button"
-                onClick={() => (templates[0] ? onStartTemplate(templates[0].id) : onStartFreestyle(cat))}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border bg-card ring-1 ring-foreground/10 hover:bg-muted"
+                onClick={() => setPickerFor(type)}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border bg-card p-2 text-center ring-1 ring-foreground/10 hover:bg-muted"
               >
-                <span className="text-base font-heading uppercase">{CATEGORY_LABEL[cat]}</span>
-                <span className="text-xs text-muted-foreground">{templates[0] ? templates[0].name : "Freestyle"}</span>
+                <span className="text-base font-heading uppercase">{WORKOUT_TYPE_LABEL[type]}</span>
+                <span className="text-[11px] text-muted-foreground">{WORKOUT_TYPE_SUBTITLE[type]}</span>
               </button>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Freestyle is semantically different — not a peer tile. It
+              means exactly "start a blank session," so it skips the
+              picker sheet entirely (there's nothing to pick from — a
+              Template can never belong to Freestyle). */}
+          <button
+            type="button"
+            onClick={() => s.startEmpty("freestyle")}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed p-3 text-center hover:bg-muted"
+          >
+            <span className="font-heading uppercase">{SESSION_TYPE_LABEL.freestyle}</span>
+            <span className="text-xs text-muted-foreground">Start an empty workout</span>
+          </button>
         </div>
       )}
+
+      <StartWorkoutPicker
+        open={pickerFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setPickerFor(null);
+        }}
+        workoutType={pickerFor}
+        templates={pickerFor ? s.templatesFor(pickerFor) : []}
+        onSelectTemplate={(id) => {
+          setPickerFor(null);
+          s.startFromTemplate(id);
+        }}
+        onStartEmpty={() => {
+          if (pickerFor) s.startEmpty(pickerFor);
+          setPickerFor(null);
+        }}
+        onManageTemplates={() => {
+          setPickerFor(null);
+          setManagerOpen(true);
+        }}
+      />
+
+      <TemplateManager
+        open={managerOpen}
+        onOpenChange={setManagerOpen}
+        templates={s.templates}
+        onArchive={s.archiveTemplate}
+        onRestore={s.restoreTemplate}
+        onSetDefault={s.setDefaultTemplate}
+      />
     </div>
   );
 }
@@ -161,7 +202,7 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
         <div className="mb-4 flex items-start justify-between">
           <div className="min-w-0">
             <h1 className="text-lg font-heading uppercase">
-              {s.category ? `${CATEGORY_LABEL[s.category]} Session` : "Session"}
+              {s.workoutType ? `${SESSION_TYPE_LABEL[s.workoutType]} Session` : "Session"}
             </h1>
             <NotePreview note={s.sessionNote} onClick={() => setNoteEditorFor("session")} className="mt-1" />
           </div>
@@ -169,7 +210,7 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
         </div>
 
         <div className="space-y-6">
-          {sessionExercises.map((exercise) => {
+          {sessionExercises.map((exercise, index) => {
             const exerciseSets = s.sets.filter((set) => set.exerciseId === exercise.id);
             const displayName = s.exerciseNameOverrides[exercise.id] ?? exercise.name;
 
@@ -179,6 +220,10 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
                   <span className="font-medium text-primary">{displayName}</span>
                   <ExerciseMenu
                     exerciseName={displayName}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < sessionExercises.length - 1}
+                    onMoveUp={() => s.moveExercise(exercise.id, -1)}
+                    onMoveDown={() => s.moveExercise(exercise.id, 1)}
                     onAddNote={() => setNoteEditorFor(exercise.id)}
                     onAddWarmupSet={() => s.addSet(exercise.id, { setType: "warmup", confirmed: false })}
                     onReplace={() => setPicker({ kind: "replace", exerciseId: exercise.id })}
@@ -437,6 +482,19 @@ function SetRow({
 function FinishedScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) {
   const elapsed = useElapsed(s.startedAt, s.finishedAt);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [templateOutcome, setTemplateOutcome] = useState<string | null>(null);
+
+  const sourceTemplate = s.templateId ? s.templates.find((t) => t.id === s.templateId) : undefined;
+  // A real Workout Type locks the Save Template form's Type field; a
+  // Freestyle session has none of its own to inherit (Templates can never
+  // belong to Freestyle), so that form asks instead.
+  const fixedWorkoutType = s.workoutType && s.workoutType !== "freestyle" ? s.workoutType : null;
+
+  function handleUpdateSource() {
+    const result = s.updateSourceTemplate();
+    if (result.ok && sourceTemplate) setTemplateOutcome(`Updated "${sourceTemplate.name}"`);
+  }
 
   return (
     <div className="p-4">
@@ -451,15 +509,27 @@ function FinishedScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> })
 
       <NotePreview note={s.sessionNote} onClick={() => setNoteOpen(true)} className="mt-1" />
 
+      {/* This session is already saved to history unconditionally — has
+          been since it started (ADR 0003). Everything below only affects
+          Templates, never the historical record of what happened. */}
       <div className="mt-6 space-y-2">
-        <Button
-          className="w-full"
-          variant={s.savedAsTemplate ? "secondary" : "outline"}
-          onClick={s.saveAsTemplate}
-          disabled={s.savedAsTemplate}
-        >
-          {s.savedAsTemplate ? "Saved as Template ✓" : "Save as Template"}
-        </Button>
+        {templateOutcome ? (
+          <p className="rounded-lg border bg-muted/50 p-2 text-center text-xs text-muted-foreground">
+            {templateOutcome} ✓
+          </p>
+        ) : (
+          <>
+            {sourceTemplate ? (
+              <Button variant="outline" className="w-full" onClick={handleUpdateSource}>
+                Update "{sourceTemplate.name}"
+              </Button>
+            ) : null}
+            <Button variant="outline" className="w-full" onClick={() => setSaveTemplateOpen(true)}>
+              Save as New Template
+            </Button>
+          </>
+        )}
+
         <Button className="w-full" onClick={s.reset}>
           Done
         </Button>
@@ -471,6 +541,17 @@ function FinishedScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> })
         title="Session note"
         value={s.sessionNote}
         onSave={s.setSessionNote}
+      />
+
+      <SaveTemplateDialog
+        open={saveTemplateOpen}
+        onOpenChange={setSaveTemplateOpen}
+        fixedWorkoutType={fixedWorkoutType}
+        onSave={(type, name) => {
+          const result = s.saveSessionAsNewTemplate(type, name);
+          if (result.ok) setTemplateOutcome(`Saved as new template "${name.trim()}"`);
+          return result;
+        }}
       />
     </div>
   );

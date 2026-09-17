@@ -25,6 +25,10 @@ import { Input } from "@/components/ui/input";
 
 export function ExerciseMenu({
   exerciseName,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
   onAddNote,
   onAddWarmupSet,
   onReplace,
@@ -32,6 +36,10 @@ export function ExerciseMenu({
   onRemove,
 }: {
   exerciseName: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onAddNote: () => void;
   onAddWarmupSet: () => void;
   onReplace: () => void;
@@ -48,6 +56,13 @@ export function ExerciseMenu({
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem className="whitespace-nowrap" disabled={!canMoveUp} onClick={onMoveUp}>
+            Move up
+          </DropdownMenuItem>
+          <DropdownMenuItem className="whitespace-nowrap" disabled={!canMoveDown} onClick={onMoveDown}>
+            Move down
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="whitespace-nowrap" onClick={onAddNote}>
             Add note
           </DropdownMenuItem>

@@ -1,33 +1,41 @@
-// PROTOTYPE — shared session state machine for the (single, now-decided)
-// logging UI. Answers ticket 02 on .scratch/training-feature/map.md, revised
-// after the Strong reference screenshots round and the shadcn refinement pass.
+// PROTOTYPE — shared session state machine. Answers tickets 02 and 04 on
+// .scratch/training-feature/map.md. Templates are now real, mutable state
+// (archive/restore/default/create/update) rather than a static catalog,
+// since ticket 04 is specifically about that lifecycle.
 
 import { useState } from "react";
 
-import type { Category, Exercise, LoggedSet, SetType } from "@/features/training-prototype/fixtures";
-import { EXERCISES, LAST_SESSION_SETS, TEMPLATES } from "@/features/training-prototype/fixtures";
+import type {
+  Exercise,
+  LoggedSet,
+  SessionType,
+  SetType,
+  Template,
+  WorkoutType,
+} from "@/features/training-prototype/fixtures";
+import { EXERCISES, INITIAL_TEMPLATES, LAST_SESSION_SETS } from "@/features/training-prototype/fixtures";
 
 export type SessionStep = "start" | "logging" | "finished";
+export type ActionResult = { ok: true } | { ok: false; reason: string };
 
 let nextId = 1000;
 
 export function useWorkoutSessionState() {
   const [step, setStep] = useState<SessionStep>("start");
-  const [category, setCategory] = useState<Category | null>(null);
+  const [workoutType, setWorkoutType] = useState<SessionType | null>(null);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [sessionNote, setSessionNote] = useState("");
   const [exerciseIds, setExerciseIds] = useState<string[]>([]);
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseNameOverrides, setExerciseNameOverrides] = useState<Record<string, string>>({});
-  // "New Exercise" from the Add Exercise flow — ad-hoc, session-scoped.
-  // A real build would create a genuine Exercise Definition via the API;
-  // here it's just enough to demonstrate the flow isn't a dead end.
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [sets, setSets] = useState<LoggedSet[]>([]);
-  const [savedAsTemplate, setSavedAsTemplate] = useState(false);
-  // Mock wall-clock times, editable via "Adjust start/end time" — ticket 03.
   const [startedAt, setStartedAt] = useState<Date | null>(null);
   const [finishedAt, setFinishedAt] = useState<Date | null>(null);
+
+  // Real, mutable template state — ticket 04 is specifically about this
+  // lifecycle (archive/restore/default), unlike ticket 02's static catalog.
+  const [templates, setTemplates] = useState<Template[]>(INITIAL_TEMPLATES);
 
   const allExercises = [...EXERCISES, ...customExercises];
 
@@ -35,10 +43,10 @@ export function useWorkoutSessionState() {
     return allExercises.find((e) => e.id === exerciseId);
   }
 
-  // A Template's suggested sets double, in this prototype, for the same
-  // snapshot data LAST_SESSION_SETS already holds — seeded as *unconfirmed*
-  // pending rows, matching Strong: starting from a template shows its sets
-  // immediately, waiting for you to confirm (or adjust first).
+  function templatesFor(type: WorkoutType) {
+    return templates.filter((t) => t.workoutType === type);
+  }
+
   function seedPendingSets(ids: string[]) {
     const seeded: LoggedSet[] = [];
     for (const exerciseId of ids) {
@@ -50,10 +58,10 @@ export function useWorkoutSessionState() {
     setSets(seeded);
   }
 
-  function startFromTemplate(tplId: string) {
-    const tpl = TEMPLATES.find((t) => t.id === tplId);
+  function startFromTemplate(templateId: string) {
+    const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return;
-    setCategory(tpl.category);
+    setWorkoutType(tpl.workoutType);
     setTemplateId(tpl.id);
     setExerciseIds(tpl.exerciseIds);
     seedPendingSets(tpl.exerciseIds);
@@ -61,8 +69,11 @@ export function useWorkoutSessionState() {
     setStep("logging");
   }
 
-  function startFreestyle(cat: Category) {
-    setCategory(cat);
+  // Both "Start empty {Type} workout" (from the picker, a real Workout
+  // Type) and the full-width Freestyle button (SessionType's 5th value)
+  // land here — the only difference is which SessionType is passed in.
+  function startEmpty(type: SessionType) {
+    setWorkoutType(type);
     setTemplateId(null);
     setExerciseIds([]);
     setSets([]);
@@ -70,11 +81,19 @@ export function useWorkoutSessionState() {
     setStep("logging");
   }
 
-  // Always appends — exerciseIds is insertion-order, and every render walks
-  // it in that order, so "new exercises go to the bottom" falls out for
-  // free rather than needing separate position bookkeeping.
   function addExercise(exerciseId: string) {
     setExerciseIds((ids) => (ids.includes(exerciseId) ? ids : [...ids, exerciseId]));
+  }
+
+  function moveExercise(exerciseId: string, direction: -1 | 1) {
+    setExerciseIds((ids) => {
+      const index = ids.indexOf(exerciseId);
+      const swapWith = index + direction;
+      if (index === -1 || swapWith < 0 || swapWith >= ids.length) return ids;
+      const next = [...ids];
+      [next[index], next[swapWith]] = [next[swapWith], next[index]];
+      return next;
+    });
   }
 
   function createExercise(name: string): Exercise {
@@ -82,7 +101,7 @@ export function useWorkoutSessionState() {
       id: `custom-${nextId++}`,
       name,
       type: "strength",
-      category: category ?? "freestyle",
+      workoutType: workoutType && workoutType !== "freestyle" ? workoutType : "push",
     };
     setCustomExercises((list) => [...list, exercise]);
     return exercise;
@@ -95,9 +114,6 @@ export function useWorkoutSessionState() {
     setExerciseNameOverrides(({ [exerciseId]: _removed, ...rest }) => rest);
   }
 
-  // Swaps the exercise at this slot for a different one, in place — matches
-  // Strong's "Replace exercise." Already-logged sets for the old exercise
-  // don't carry over (they were logged against a different exercise).
   function replaceExercise(oldExerciseId: string, newExerciseId: string) {
     setExerciseIds((ids) => ids.map((id) => (id === oldExerciseId ? newExerciseId : id)));
     setSets((s) => s.filter((set) => set.exerciseId !== oldExerciseId));
@@ -164,9 +180,6 @@ export function useWorkoutSessionState() {
     setStep("finished");
   }
 
-  // "Cancel Workout" — a hard delete of the whole in-progress session and
-  // its sets, matching ticket 03's amendment. No confirmation dialog in the
-  // prototype; the real build should ask before discarding logged sets.
   function cancelSession() {
     reset();
   }
@@ -176,13 +189,9 @@ export function useWorkoutSessionState() {
     setFinishedAt(newFinishedAt);
   }
 
-  function saveAsTemplate() {
-    setSavedAsTemplate(true);
-  }
-
   function reset() {
     setStep("start");
-    setCategory(null);
+    setWorkoutType(null);
     setTemplateId(null);
     setSessionNote("");
     setExerciseIds([]);
@@ -190,14 +199,70 @@ export function useWorkoutSessionState() {
     setExerciseNameOverrides({});
     setCustomExercises([]);
     setSets([]);
-    setSavedAsTemplate(false);
     setStartedAt(null);
     setFinishedAt(null);
   }
 
+  // ---- Template lifecycle (ticket 04) ----
+
+  function templateNameConflict(type: WorkoutType, name: string, excludeId?: string) {
+    const normalized = name.trim().toLowerCase();
+    return templates.some((t) => t.workoutType === type && t.id !== excludeId && t.name.trim().toLowerCase() === normalized);
+  }
+
+  // A session's own exercise list/order is the source of truth for what a
+  // Template becomes — the prototype's simplified fixtures don't model a
+  // template's own per-set suggested values separately from
+  // LAST_SESSION_SETS, so "the template" here is really just its exercise
+  // list. The real build follows workout_template_sets, not this shortcut.
+  function saveSessionAsNewTemplate(type: WorkoutType, name: string): ActionResult {
+    if (!name.trim()) return { ok: false, reason: "Name is required." };
+    if (templateNameConflict(type, name)) {
+      return { ok: false, reason: `A template named "${name.trim()}" already exists for ${type}.` };
+    }
+    const template: Template = {
+      id: `tpl-${nextId++}`,
+      name: name.trim(),
+      workoutType: type,
+      exerciseIds,
+      isDefault: false,
+      archived: false,
+    };
+    setTemplates((list) => [...list, template]);
+    return { ok: true };
+  }
+
+  function updateSourceTemplate(): ActionResult {
+    if (!templateId) return { ok: false, reason: "This session didn't start from a template." };
+    setTemplates((list) => list.map((t) => (t.id === templateId ? { ...t, exerciseIds } : t)));
+    return { ok: true };
+  }
+
+  function archiveTemplate(id: string): ActionResult {
+    const tpl = templates.find((t) => t.id === id);
+    if (!tpl) return { ok: false, reason: "Template not found." };
+    if (tpl.isDefault) {
+      return { ok: false, reason: "Pick a new default for this Workout Type before archiving it." };
+    }
+    setTemplates((list) => list.map((t) => (t.id === id ? { ...t, archived: true } : t)));
+    return { ok: true };
+  }
+
+  function restoreTemplate(id: string) {
+    setTemplates((list) => list.map((t) => (t.id === id ? { ...t, archived: false } : t)));
+  }
+
+  function setDefaultTemplate(id: string) {
+    setTemplates((list) => {
+      const target = list.find((t) => t.id === id);
+      if (!target) return list;
+      return list.map((t) => (t.workoutType === target.workoutType ? { ...t, isDefault: t.id === id } : t));
+    });
+  }
+
   return {
     step,
-    category,
+    workoutType,
     templateId,
     sessionNote,
     exerciseIds,
@@ -205,13 +270,15 @@ export function useWorkoutSessionState() {
     exerciseNameOverrides,
     allExercises,
     sets,
-    savedAsTemplate,
     startedAt,
     finishedAt,
+    templates,
+    templatesFor,
     setSessionNote,
     startFromTemplate,
-    startFreestyle,
+    startEmpty,
     addExercise,
+    moveExercise,
     createExercise,
     removeExercise,
     replaceExercise,
@@ -227,8 +294,13 @@ export function useWorkoutSessionState() {
     finish,
     cancelSession,
     adjustTimes,
-    saveAsTemplate,
     reset,
+    templateNameConflict,
+    saveSessionAsNewTemplate,
+    updateSourceTemplate,
+    archiveTemplate,
+    restoreTemplate,
+    setDefaultTemplate,
   };
 }
 
