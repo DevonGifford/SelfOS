@@ -8,16 +8,34 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import type { Category, Exercise, Scenario, SetType } from "@/features/training-prototype/fixtures";
+import type { Category, Exercise, LoggedSet, Scenario, SetType } from "@/features/training-prototype/fixtures";
 import {
   CATEGORY_LABEL,
   LAST_SESSION_SETS,
   SET_TYPE_BADGE,
+  SET_TYPE_COLOR,
   SET_TYPE_LABEL,
   TEMPLATES,
-  formatSet,
+  formatSetBase,
 } from "@/features/training-prototype/fixtures";
 import { ExerciseMenu } from "@/features/training-prototype/exercise-menu";
 import { ExercisePicker } from "@/features/training-prototype/exercise-picker";
@@ -203,7 +221,7 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
                           exercise={exercise}
                           set={set}
                           rowLabel={rowLabel}
-                          previousLabel={priorSet ? formatSet(exercise, priorSet) : "—"}
+                          priorSet={priorSet}
                           onUpdate={(patch) => s.updateSet(set.id, patch)}
                           onSetType={(t) => s.setSetType(set.id, t)}
                           onToggleConfirmed={() => s.toggleConfirmed(set.id)}
@@ -236,9 +254,27 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
           >
             + Add Exercise
           </button>
-          <button type="button" className="text-xs font-medium uppercase tracking-wide text-destructive" onClick={s.cancelSession}>
-            Cancel Workout
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={<button type="button" className="text-xs font-medium uppercase tracking-wide text-destructive" />}
+            >
+              Cancel Workout
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel workout?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  The current session, including every logged set, will be discarded. This can't be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep Workout</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={s.cancelSession}>
+                  Cancel Workout
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -260,7 +296,7 @@ function SetRow({
   exercise,
   set,
   rowLabel,
-  previousLabel,
+  priorSet,
   onUpdate,
   onSetType,
   onToggleConfirmed,
@@ -277,40 +313,44 @@ function SetRow({
     distanceM?: number;
   };
   rowLabel: string;
-  previousLabel: string;
+  priorSet: LoggedSet | undefined;
   onUpdate: (patch: Partial<typeof set>) => void;
   onSetType: (t: SetType) => void;
   onToggleConfirmed: () => void;
   onRemove: () => void;
 }) {
-  const badgeColor =
-    set.setType === "warmup"
-      ? "text-amber-500"
-      : set.setType === "failure"
-        ? "text-red-500"
-        : set.setType === "drop"
-          ? "text-violet-400"
-          : "text-foreground";
+  const priorBadge = priorSet ? SET_TYPE_BADGE[priorSet.setType] : "";
 
   return (
     <>
-      <span className="relative -ml-0.5 flex h-7 w-5 items-center justify-center">
-        <span className={`pointer-events-none text-xs font-semibold ${badgeColor}`}>{rowLabel}</span>
-        <select
-          aria-label="Set type"
-          value={set.setType}
-          onChange={(e) => onSetType(e.target.value as SetType)}
-          className="absolute inset-0 cursor-pointer opacity-0"
+      {/* Lightweight, not a full editor: tapping the set indicator itself
+          opens a small menu to reclassify it. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<button type="button" className="-ml-0.5 flex h-7 w-5 items-center justify-center" />}
         >
+          <span className={`text-xs font-semibold ${SET_TYPE_COLOR[set.setType]}`}>{rowLabel}</span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
           {(["working", "warmup", "drop", "failure"] as SetType[]).map((t) => (
-            <option key={t} value={t}>
+            <DropdownMenuItem key={t} className="whitespace-nowrap" onClick={() => onSetType(t)}>
+              <span className={`w-4 font-semibold ${SET_TYPE_COLOR[t]}`}>{SET_TYPE_BADGE[t] || "•"}</span>
               {SET_TYPE_LABEL[t]}
-            </option>
+            </DropdownMenuItem>
           ))}
-        </select>
-      </span>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <span className="truncate text-muted-foreground normal-case">{previousLabel}</span>
+      <span className="truncate text-muted-foreground normal-case">
+        {priorSet ? (
+          <>
+            {formatSetBase(exercise, priorSet)}
+            {priorBadge ? <span className={`ml-1 ${SET_TYPE_COLOR[priorSet.setType]}`}>[{priorBadge}]</span> : null}
+          </>
+        ) : (
+          "—"
+        )}
+      </span>
 
       {exercise.type === "cardio" ? (
         <>

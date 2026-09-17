@@ -47,11 +47,18 @@ export function ExerciseMenu({
         <DropdownMenuTrigger render={<button type="button" className="text-muted-foreground hover:text-foreground" />}>
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onAddNote}>Add note</DropdownMenuItem>
-          <DropdownMenuItem onClick={onAddWarmupSet}>Add warm-up set</DropdownMenuItem>
-          <DropdownMenuItem onClick={onReplace}>Replace exercise</DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem className="whitespace-nowrap" onClick={onAddNote}>
+            Add note
+          </DropdownMenuItem>
+          <DropdownMenuItem className="whitespace-nowrap" onClick={onAddWarmupSet}>
+            Add warm-up set
+          </DropdownMenuItem>
+          <DropdownMenuItem className="whitespace-nowrap" onClick={onReplace}>
+            Replace exercise
+          </DropdownMenuItem>
           <DropdownMenuItem
+            className="whitespace-nowrap"
             onClick={() => {
               setName(exerciseName);
               setRenameOpen(true);
@@ -60,7 +67,7 @@ export function ExerciseMenu({
             Rename exercise
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={onRemove}>
+          <DropdownMenuItem className="whitespace-nowrap" variant="destructive" onClick={onRemove}>
             Remove exercise
           </DropdownMenuItem>
         </DropdownMenuContent>

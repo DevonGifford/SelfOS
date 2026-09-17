@@ -67,6 +67,15 @@ export const SET_TYPE_LABEL: Record<SetType, string> = {
   drop: "Drop set",
 };
 
+// Shared between the live set-type badge and the "Previous" column's tag,
+// so a past failure set reads with the same red as a current one.
+export const SET_TYPE_COLOR: Record<SetType, string> = {
+  warmup: "text-amber-500",
+  working: "text-foreground",
+  failure: "text-red-500",
+  drop: "text-violet-400",
+};
+
 export type LoggedSet = {
   id: string;
   exerciseId: string;
@@ -107,15 +116,22 @@ export const LAST_SESSION_SETS: Record<string, LoggedSet[]> = {
   treadmill: [{ id: "l12", exerciseId: "treadmill", setType: "working", confirmed: true, durationSec: 1500, distanceM: 5000 }],
 };
 
-export function formatSet(exercise: Exercise, set: LoggedSet): string {
-  const badge = SET_TYPE_BADGE[set.setType];
-  const suffix = badge ? ` [${badge}]` : "";
+// The numeric part only — no [W]/[F]/[D] suffix. Callers that want the
+// type called out (e.g. the "Previous" column) render that tag themselves,
+// colored via SET_TYPE_COLOR, rather than getting it baked into plain text.
+export function formatSetBase(exercise: { type: ExerciseType }, set: LoggedSet): string {
   if (exercise.type === "cardio") {
     const mins = set.durationSec ? Math.round(set.durationSec / 60) : 0;
     const km = set.distanceM ? (set.distanceM / 1000).toFixed(1) : "0.0";
-    return `${mins}:00 · ${km}km${suffix}`;
+    return `${mins}:00 · ${km}km`;
   }
-  return `${set.weightKg ?? 0}kg × ${set.reps ?? 0}${suffix}`;
+  return `${set.weightKg ?? 0}kg × ${set.reps ?? 0}`;
+}
+
+export function formatSet(exercise: { type: ExerciseType }, set: LoggedSet): string {
+  const badge = SET_TYPE_BADGE[set.setType];
+  const suffix = badge ? ` [${badge}]` : "";
+  return `${formatSetBase(exercise, set)}${suffix}`;
 }
 
 export type Scenario = "normal" | "loading" | "error" | "empty";
