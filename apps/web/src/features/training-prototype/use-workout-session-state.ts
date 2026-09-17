@@ -1,10 +1,10 @@
-// PROTOTYPE — shared session state machine so all three UI variants behave
-// identically underneath (the question is layout/interaction, not logic).
-// Answers ticket 02 on .scratch/training-feature/map.md.
+// PROTOTYPE — shared session state machine for the (single, now-decided)
+// logging UI. Answers ticket 02 on .scratch/training-feature/map.md, revised
+// after the Strong reference screenshots round.
 
 import { useState } from "react";
 
-import type { Category, LoggedSet } from "@/features/training-prototype/fixtures";
+import type { Category, LoggedSet, SetType } from "@/features/training-prototype/fixtures";
 import { EXERCISES, LAST_SESSION_SETS, TEMPLATES } from "@/features/training-prototype/fixtures";
 
 export type SessionStep = "start" | "logging" | "finished";
@@ -17,8 +17,27 @@ export function useWorkoutSessionState() {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [sessionNote, setSessionNote] = useState("");
   const [exerciseIds, setExerciseIds] = useState<string[]>([]);
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [sets, setSets] = useState<LoggedSet[]>([]);
   const [savedAsTemplate, setSavedAsTemplate] = useState(false);
+  // Mock wall-clock times, editable via "Adjust start/end time" — ticket 03.
+  const [startedAt, setStartedAt] = useState<Date | null>(null);
+  const [finishedAt, setFinishedAt] = useState<Date | null>(null);
+
+  // A Template's suggested sets double, in this prototype, for the same
+  // snapshot data LAST_SESSION_SETS already holds — seeded as *unconfirmed*
+  // pending rows, matching Strong: starting from a template shows its sets
+  // immediately, waiting for you to confirm (or adjust first).
+  function seedPendingSets(ids: string[]) {
+    const seeded: LoggedSet[] = [];
+    for (const exerciseId of ids) {
+      const prior = LAST_SESSION_SETS[exerciseId] ?? [];
+      for (const set of prior) {
+        seeded.push({ ...set, id: `s${nextId++}`, confirmed: false });
+      }
+    }
+    setSets(seeded);
+  }
 
   function startFromTemplate(tplId: string) {
     const tpl = TEMPLATES.find((t) => t.id === tplId);
@@ -26,6 +45,8 @@ export function useWorkoutSessionState() {
     setCategory(tpl.category);
     setTemplateId(tpl.id);
     setExerciseIds(tpl.exerciseIds);
+    seedPendingSets(tpl.exerciseIds);
+    setStartedAt(new Date());
     setStep("logging");
   }
 
@@ -33,6 +54,8 @@ export function useWorkoutSessionState() {
     setCategory(cat);
     setTemplateId(null);
     setExerciseIds([]);
+    setSets([]);
+    setStartedAt(new Date());
     setStep("logging");
   }
 
@@ -58,7 +81,8 @@ export function useWorkoutSessionState() {
     const set: LoggedSet = {
       id: `s${nextId++}`,
       exerciseId,
-      isWarmup: false,
+      setType: "working",
+      confirmed: false,
       weightKg: exercise?.type === "strength" ? last?.weightKg : undefined,
       reps: exercise?.type === "strength" ? last?.reps : undefined,
       durationSec: exercise?.type === "cardio" ? last?.durationSec : undefined,
@@ -73,12 +97,37 @@ export function useWorkoutSessionState() {
     setSets((s) => s.map((set) => (set.id === setId ? { ...set, ...patch } : set)));
   }
 
+  function toggleConfirmed(setId: string) {
+    setSets((s) => s.map((set) => (set.id === setId ? { ...set, confirmed: !set.confirmed } : set)));
+  }
+
+  function setSetType(setId: string, setType: SetType) {
+    updateSet(setId, { setType });
+  }
+
   function removeSet(setId: string) {
     setSets((s) => s.filter((set) => set.id !== setId));
   }
 
+  function setExerciseNote(exerciseId: string, note: string) {
+    setExerciseNotes((notes) => ({ ...notes, [exerciseId]: note }));
+  }
+
   function finish() {
+    setFinishedAt(new Date());
     setStep("finished");
+  }
+
+  // "Cancel Workout" — a hard delete of the whole in-progress session and
+  // its sets, matching ticket 03's amendment. No confirmation dialog in the
+  // prototype; the real build should ask before discarding logged sets.
+  function cancelSession() {
+    reset();
+  }
+
+  function adjustTimes(newStartedAt: Date, newFinishedAt: Date | null) {
+    setStartedAt(newStartedAt);
+    setFinishedAt(newFinishedAt);
   }
 
   function saveAsTemplate() {
@@ -91,8 +140,11 @@ export function useWorkoutSessionState() {
     setTemplateId(null);
     setSessionNote("");
     setExerciseIds([]);
+    setExerciseNotes({});
     setSets([]);
     setSavedAsTemplate(false);
+    setStartedAt(null);
+    setFinishedAt(null);
   }
 
   return {
@@ -101,18 +153,26 @@ export function useWorkoutSessionState() {
     templateId,
     sessionNote,
     exerciseIds,
+    exerciseNotes,
     sets,
     savedAsTemplate,
+    startedAt,
+    finishedAt,
     setSessionNote,
     startFromTemplate,
     startFreestyle,
     addExercise,
     addSet,
     updateSet,
+    toggleConfirmed,
+    setSetType,
     removeSet,
+    setExerciseNote,
     lastSetFor,
     suggestedFor,
     finish,
+    cancelSession,
+    adjustTimes,
     saveAsTemplate,
     reset,
   };
