@@ -40,6 +40,7 @@ import {
 import { ExerciseMenu } from "@/features/training-prototype/exercise-menu";
 import { ExercisePicker } from "@/features/training-prototype/exercise-picker";
 import { EmptyBlock, ErrorBlock, LoadingSkeleton } from "@/features/training-prototype/load-states";
+import { NoteEditorDialog, NotePreview } from "@/features/training-prototype/note-field";
 import { RestTimer } from "@/features/training-prototype/rest-timer";
 import { SessionMenu } from "@/features/training-prototype/session-menu";
 import { useWorkoutSessionState } from "@/features/training-prototype/use-workout-session-state";
@@ -127,7 +128,9 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
     .filter((e): e is Exercise => Boolean(e));
   const availableToAdd = s.allExercises.filter((e) => !s.exerciseIds.includes(e.id));
   const [picker, setPicker] = useState<PickerMode>(null);
-  const [noteEditorFor, setNoteEditorFor] = useState<string | null>(null);
+  // null = closed, "session" = editing the session note, an exercise id =
+  // editing that exercise's note. One dialog instance, one note workflow.
+  const [noteEditorFor, setNoteEditorFor] = useState<string | "session" | null>(null);
 
   function selectFromPicker(exercise: Exercise) {
     if (picker?.kind === "replace") s.replaceExercise(picker.exerciseId, exercise.id);
@@ -156,19 +159,18 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
 
       <div className="p-4">
         <div className="mb-4 flex items-start justify-between">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-heading uppercase">
               {s.category ? `${CATEGORY_LABEL[s.category]} Session` : "Session"}
             </h1>
-            {s.sessionNote ? <p className="mt-1 text-xs text-muted-foreground">{s.sessionNote}</p> : null}
+            <NotePreview note={s.sessionNote} onClick={() => setNoteEditorFor("session")} className="mt-1" />
           </div>
-          <SessionMenu s={s} />
+          <SessionMenu s={s} onAddNote={() => setNoteEditorFor("session")} />
         </div>
 
         <div className="space-y-6">
           {sessionExercises.map((exercise) => {
             const exerciseSets = s.sets.filter((set) => set.exerciseId === exercise.id);
-            const hasNote = Boolean(s.exerciseNotes[exercise.id]) || noteEditorFor === exercise.id;
             const displayName = s.exerciseNameOverrides[exercise.id] ?? exercise.name;
 
             return (
@@ -185,16 +187,11 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
                   />
                 </div>
 
-                {hasNote ? (
-                  <input
-                    type="text"
-                    autoFocus={noteEditorFor === exercise.id}
-                    value={s.exerciseNotes[exercise.id] ?? ""}
-                    onChange={(e) => s.setExerciseNote(exercise.id, e.target.value)}
-                    placeholder="Note for this exercise…"
-                    className="mb-2 w-full rounded-lg border bg-transparent px-2 py-1.5 text-sm outline-none focus:border-primary"
-                  />
-                ) : null}
+                <NotePreview
+                  note={s.exerciseNotes[exercise.id] ?? ""}
+                  onClick={() => setNoteEditorFor(exercise.id)}
+                  className="mb-1"
+                />
 
                 <div className="grid grid-cols-[1.25rem_1fr_3.25rem_3.25rem_auto] items-center gap-x-2 gap-y-1.5 font-mono text-[11px] uppercase text-muted-foreground">
                   <span>Set</span>
@@ -287,6 +284,25 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
         options={availableToAdd}
         onSelect={selectFromPicker}
         onCreate={createFromPicker}
+      />
+
+      <NoteEditorDialog
+        open={noteEditorFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoteEditorFor(null);
+        }}
+        title={
+          noteEditorFor === "session"
+            ? "Session note"
+            : `${sessionExercises.find((e) => e.id === noteEditorFor)?.name ?? "Exercise"} note`
+        }
+        value={
+          noteEditorFor === "session" ? s.sessionNote : noteEditorFor ? (s.exerciseNotes[noteEditorFor] ?? "") : ""
+        }
+        onSave={(value) => {
+          if (noteEditorFor === "session") s.setSessionNote(value);
+          else if (noteEditorFor) s.setExerciseNote(noteEditorFor, value);
+        }}
       />
     </div>
   );
@@ -397,9 +413,22 @@ function SetRow({
         >
           ✓
         </button>
-        <button type="button" onClick={onRemove} className="text-muted-foreground hover:text-destructive">
-          <Trash2 className="size-3.5" />
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger render={<button type="button" className="text-muted-foreground hover:text-destructive" />}>
+            <Trash2 className="size-3.5" />
+          </AlertDialogTrigger>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete set?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={onRemove}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </span>
     </>
   );
@@ -407,17 +436,20 @@ function SetRow({
 
 function FinishedScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) {
   const elapsed = useElapsed(s.startedAt, s.finishedAt);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-heading uppercase">Workout Complete</h1>
-        <SessionMenu s={s} />
+        <SessionMenu s={s} onAddNote={() => setNoteOpen(true)} />
       </div>
 
       <p className="text-sm text-muted-foreground">
         {s.sets.filter((set) => set.confirmed).length} sets logged · {elapsed}
       </p>
+
+      <NotePreview note={s.sessionNote} onClick={() => setNoteOpen(true)} className="mt-1" />
 
       <div className="mt-6 space-y-2">
         <Button
@@ -432,6 +464,14 @@ function FinishedScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> })
           Done
         </Button>
       </div>
+
+      <NoteEditorDialog
+        open={noteOpen}
+        onOpenChange={setNoteOpen}
+        title="Session note"
+        value={s.sessionNote}
+        onSave={s.setSessionNote}
+      />
     </div>
   );
 }

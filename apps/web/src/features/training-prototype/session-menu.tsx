@@ -1,28 +1,22 @@
-// PROTOTYPE — the workout-level "..." menu. Rebuilt on shadcn's
-// DropdownMenu (was a hand-rolled absolutely-positioned div with no
-// outside-click dismissal). Same two actions as before: Add note, Adjust
-// start/end time — room for a future Rename workout item, not added yet.
-// Answers ticket 02's shadcn refinement pass.
+// PROTOTYPE — the workout-level "..." menu. Same shadcn DropdownMenu
+// treatment as the exercise-level menu (width, no-wrap) for visual
+// consistency. Note editing is delegated to the shared NoteEditorDialog via
+// onAddNote, matching how ExerciseMenu already works — one note workflow,
+// not two. Adjust start/end time stays local to this menu; room for a
+// future Rename workout item, not added yet. Answers ticket 02's note
+// unification + menu consistency pass.
 
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
 import type { useWorkoutSessionState } from "@/features/training-prototype/use-workout-session-state";
 
 function toTimeInput(date: Date) {
@@ -36,8 +30,13 @@ function fromTimeInput(base: Date, value: string) {
   return next;
 }
 
-export function SessionMenu({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) {
-  const [noteOpen, setNoteOpen] = useState(false);
+export function SessionMenu({
+  s,
+  onAddNote,
+}: {
+  s: ReturnType<typeof useWorkoutSessionState>;
+  onAddNote: () => void;
+}) {
   const [timesOpen, setTimesOpen] = useState(false);
 
   return (
@@ -53,29 +52,15 @@ export function SessionMenu({ s }: { s: ReturnType<typeof useWorkoutSessionState
         >
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setNoteOpen(true)}>Add note</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTimesOpen(true)}>Adjust start/end time</DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem className="whitespace-nowrap" onClick={onAddNote}>
+            Add note
+          </DropdownMenuItem>
+          <DropdownMenuItem className="whitespace-nowrap" onClick={() => setTimesOpen(true)}>
+            Adjust start/end time
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Session note</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            autoFocus
-            value={s.sessionNote}
-            onChange={(e) => s.setSessionNote(e.target.value)}
-            placeholder="Session note…"
-            rows={3}
-          />
-          <DialogFooter>
-            <DialogClose render={<Button />}>Done</DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={timesOpen} onOpenChange={setTimesOpen}>
         <DialogContent>
