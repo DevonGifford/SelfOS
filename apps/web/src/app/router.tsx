@@ -11,6 +11,7 @@ import { MeasurementsPage } from "@/routes/measurements";
 import { NutritionPage } from "@/routes/nutrition";
 import { SettingsPage } from "@/routes/settings";
 import { TrainingPage } from "@/routes/training";
+import { TrainingLogPrototypePage } from "@/routes/training-log-prototype";
 
 // Runs before AppShell renders, so there's no shell-flash-then-bounce
 // (ticket 09 §3). A real 401 already triggers a hard redirect inside
@@ -58,6 +59,12 @@ export const router = createBrowserRouter([
       {
         path: "training",
         element: <TrainingPage />,
+      },
+      {
+        // PROTOTYPE — answers ticket 02 on .scratch/training-feature/map.md.
+        // Not linked from nav. Remove once a direction is picked.
+        path: "training-log-prototype",
+        element: <TrainingLogPrototypePage />,
       },
       {
         path: "habits",
