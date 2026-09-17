@@ -1,24 +1,29 @@
 // PROTOTYPE — the single, deepened logging-flow design (Variant A's
 // accordion + Variant B's tile start screen, per ticket 02's decision),
-// revised after walking through Strong app reference screenshots. Throwaway.
-// Answers ticket 02 on .scratch/training-feature/map.md.
+// revised after walking through Strong app reference screenshots, then
+// refined again against shadcn primitives (menus, dialogs, command palette)
+// in place of hand-rolled ones. Throwaway. Answers ticket 02 on
+// .scratch/training-feature/map.md.
 
 import { useEffect, useState } from "react";
-import { ChevronDown, MoreHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import type { Category, Scenario, SetType } from "@/features/training-prototype/fixtures";
+import { Separator } from "@/components/ui/separator";
+import type { Category, Exercise, Scenario, SetType } from "@/features/training-prototype/fixtures";
 import {
   CATEGORY_LABEL,
-  EXERCISES,
   LAST_SESSION_SETS,
   SET_TYPE_BADGE,
   SET_TYPE_LABEL,
   TEMPLATES,
   formatSet,
 } from "@/features/training-prototype/fixtures";
+import { ExerciseMenu } from "@/features/training-prototype/exercise-menu";
+import { ExercisePicker } from "@/features/training-prototype/exercise-picker";
 import { EmptyBlock, ErrorBlock, LoadingSkeleton } from "@/features/training-prototype/load-states";
+import { RestTimer } from "@/features/training-prototype/rest-timer";
+import { SessionMenu } from "@/features/training-prototype/session-menu";
 import { useWorkoutSessionState } from "@/features/training-prototype/use-workout-session-state";
 
 const CATEGORIES: Category[] = ["push", "pull", "legs", "cardio", "freestyle"];
@@ -91,112 +96,30 @@ function useElapsed(startedAt: Date | null, finishedAt: Date | null) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function SessionMenu({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) {
-  const [open, setOpen] = useState(false);
-  const [showNote, setShowNote] = useState(false);
-  const [showTimes, setShowTimes] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-      >
-        <MoreHorizontal className="size-4" />
-      </button>
-
-      {open ? (
-        <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border bg-card py-1 text-sm shadow-lg ring-1 ring-foreground/10">
-          <button
-            type="button"
-            className="block w-full px-3 py-2 text-left hover:bg-muted"
-            onClick={() => {
-              setShowNote((v) => !v);
-              setOpen(false);
-            }}
-          >
-            Add note
-          </button>
-          <button
-            type="button"
-            className="block w-full px-3 py-2 text-left hover:bg-muted"
-            onClick={() => {
-              setShowTimes((v) => !v);
-              setOpen(false);
-            }}
-          >
-            Adjust start/end time
-          </button>
-        </div>
-      ) : null}
-
-      {showNote ? (
-        <div className="absolute right-0 top-9 z-10 w-64">
-          <textarea
-            autoFocus
-            value={s.sessionNote}
-            onChange={(e) => s.setSessionNote(e.target.value)}
-            placeholder="Session note…"
-            className="w-full rounded-lg border bg-card p-2 text-sm shadow-lg outline-none"
-            rows={2}
-          />
-        </div>
-      ) : null}
-
-      {showTimes ? (
-        <div className="absolute right-0 top-9 z-10 w-56 space-y-2 rounded-lg border bg-card p-3 text-sm shadow-lg ring-1 ring-foreground/10">
-          <label className="block">
-            <span className="text-xs text-muted-foreground">Start</span>
-            <input
-              type="time"
-              defaultValue={s.startedAt ? toTimeInput(s.startedAt) : ""}
-              onChange={(e) => {
-                const next = fromTimeInput(s.startedAt ?? new Date(), e.target.value);
-                s.adjustTimes(next, s.finishedAt);
-              }}
-              className="mt-1 w-full rounded border bg-transparent px-1.5 py-1"
-            />
-          </label>
-          {s.finishedAt ? (
-            <label className="block">
-              <span className="text-xs text-muted-foreground">Finish</span>
-              <input
-                type="time"
-                defaultValue={toTimeInput(s.finishedAt)}
-                onChange={(e) => {
-                  const next = fromTimeInput(s.finishedAt ?? new Date(), e.target.value);
-                  s.adjustTimes(s.startedAt ?? new Date(), next);
-                }}
-                className="mt-1 w-full rounded border bg-transparent px-1.5 py-1"
-              />
-            </label>
-          ) : (
-            <p className="text-xs text-muted-foreground">Finish time isn't set until you finish the workout.</p>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function toTimeInput(date: Date) {
-  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-}
-
-function fromTimeInput(base: Date, value: string) {
-  const [h, m] = value.split(":").map(Number);
-  const next = new Date(base);
-  next.setHours(h, m, 0, 0);
-  return next;
-}
+// Add Exercise / Replace exercise share one picker: which slot (if any)
+// we're replacing decides what onSelect does with the chosen exercise.
+type PickerMode = { kind: "add" } | { kind: "replace"; exerciseId: string } | null;
 
 function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) {
   const elapsed = useElapsed(s.startedAt, s.finishedAt);
-  const sessionExercises = EXERCISES.filter((e) => s.exerciseIds.includes(e.id));
-  const availableToAdd = EXERCISES.filter((e) => !s.exerciseIds.includes(e.id));
-  const [addingExercise, setAddingExercise] = useState(false);
+  // Ordered by exerciseIds (insertion order), not catalog order — otherwise
+  // a newly-added exercise wouldn't reliably land at the bottom.
+  const sessionExercises = s.exerciseIds
+    .map((id) => s.allExercises.find((e) => e.id === id))
+    .filter((e): e is Exercise => Boolean(e));
+  const availableToAdd = s.allExercises.filter((e) => !s.exerciseIds.includes(e.id));
+  const [picker, setPicker] = useState<PickerMode>(null);
   const [noteEditorFor, setNoteEditorFor] = useState<string | null>(null);
+
+  function selectFromPicker(exercise: Exercise) {
+    if (picker?.kind === "replace") s.replaceExercise(picker.exerciseId, exercise.id);
+    else s.addExercise(exercise.id);
+  }
+
+  function createFromPicker(name: string) {
+    const exercise = s.createExercise(name);
+    selectFromPicker(exercise);
+  }
 
   return (
     <div className="pb-8">
@@ -204,7 +127,10 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
         <button type="button" className="flex size-7 items-center justify-center text-muted-foreground">
           <ChevronDown className="size-5" />
         </button>
-        <span className="font-mono text-sm tabular-nums text-muted-foreground">{elapsed}</span>
+        <div className="flex items-center gap-2">
+          <RestTimer />
+          <span className="font-mono text-sm tabular-nums text-muted-foreground">{elapsed}</span>
+        </div>
         <Button size="sm" variant="ghost" className="text-primary" onClick={s.finish}>
           Finish
         </Button>
@@ -225,18 +151,20 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
           {sessionExercises.map((exercise) => {
             const exerciseSets = s.sets.filter((set) => set.exerciseId === exercise.id);
             const hasNote = Boolean(s.exerciseNotes[exercise.id]) || noteEditorFor === exercise.id;
+            const displayName = s.exerciseNameOverrides[exercise.id] ?? exercise.name;
 
             return (
               <div key={exercise.id}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-medium text-primary">{exercise.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setNoteEditorFor(noteEditorFor === exercise.id ? null : exercise.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </button>
+                  <span className="font-medium text-primary">{displayName}</span>
+                  <ExerciseMenu
+                    exerciseName={displayName}
+                    onAddNote={() => setNoteEditorFor(exercise.id)}
+                    onAddWarmupSet={() => s.addSet(exercise.id, { setType: "warmup", confirmed: false })}
+                    onReplace={() => setPicker({ kind: "replace", exerciseId: exercise.id })}
+                    onRename={(name) => s.renameExercise(exercise.id, name)}
+                    onRemove={() => s.removeExercise(exercise.id)}
+                  />
                 </div>
 
                 {hasNote ? (
@@ -250,7 +178,7 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
                   />
                 ) : null}
 
-                <div className="grid grid-cols-[1.75rem_1fr_1fr_1fr_auto] items-center gap-x-2 gap-y-1.5 font-mono text-[11px] uppercase text-muted-foreground">
+                <div className="grid grid-cols-[1.25rem_1fr_3.25rem_3.25rem_auto] items-center gap-x-2 gap-y-1.5 font-mono text-[11px] uppercase text-muted-foreground">
                   <span>Set</span>
                   <span>Previous</span>
                   <span>{exercise.type === "cardio" ? "Time" : "Weight"}</span>
@@ -296,40 +224,34 @@ function LoggingScreen({ s }: { s: ReturnType<typeof useWorkoutSessionState> }) 
               </div>
             );
           })}
+        </div>
 
-          {addingExercise ? (
-            <Card size="sm">
-              <CardContent className="space-y-1">
-                {availableToAdd.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
-                    onClick={() => {
-                      s.addExercise(e.id);
-                      setAddingExercise(false);
-                    }}
-                  >
-                    {e.name}
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-          ) : (
-            <button
-              type="button"
-              className="block text-xs font-medium uppercase tracking-wide text-primary"
-              onClick={() => setAddingExercise(true)}
-            >
-              + Add Exercise
-            </button>
-          )}
+        <Separator className="my-6" />
 
-          <button type="button" className="block text-xs font-medium uppercase tracking-wide text-destructive" onClick={s.cancelSession}>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            className="text-xs font-medium uppercase tracking-wide text-primary"
+            onClick={() => setPicker({ kind: "add" })}
+          >
+            + Add Exercise
+          </button>
+          <button type="button" className="text-xs font-medium uppercase tracking-wide text-destructive" onClick={s.cancelSession}>
             Cancel Workout
           </button>
         </div>
       </div>
+
+      <ExercisePicker
+        open={picker !== null}
+        onOpenChange={(open) => {
+          if (!open) setPicker(null);
+        }}
+        title={picker?.kind === "replace" ? "Replace exercise" : "Add exercise"}
+        options={availableToAdd}
+        onSelect={selectFromPicker}
+        onCreate={createFromPicker}
+      />
     </div>
   );
 }
@@ -372,7 +294,7 @@ function SetRow({
 
   return (
     <>
-      <span className="relative flex h-7 w-7 items-center justify-center">
+      <span className="relative -ml-0.5 flex h-7 w-5 items-center justify-center">
         <span className={`pointer-events-none text-xs font-semibold ${badgeColor}`}>{rowLabel}</span>
         <select
           aria-label="Set type"
@@ -388,7 +310,7 @@ function SetRow({
         </select>
       </span>
 
-      <span className="truncate text-muted-foreground">{previousLabel}</span>
+      <span className="truncate text-muted-foreground normal-case">{previousLabel}</span>
 
       {exercise.type === "cardio" ? (
         <>
@@ -396,13 +318,13 @@ function SetRow({
             type="number"
             value={set.durationSec ? Math.round(set.durationSec / 60) : ""}
             onChange={(e) => onUpdate({ durationSec: Number(e.target.value) * 60 })}
-            className="h-8 w-full rounded-lg border bg-transparent px-1.5 text-sm text-foreground"
+            className="h-8 w-full min-w-0 rounded-lg border bg-transparent px-1 text-center text-sm text-foreground"
           />
           <input
             type="number"
             value={set.distanceM ? set.distanceM / 1000 : ""}
             onChange={(e) => onUpdate({ distanceM: Number(e.target.value) * 1000 })}
-            className="h-8 w-full rounded-lg border bg-transparent px-1.5 text-sm text-foreground"
+            className="h-8 w-full min-w-0 rounded-lg border bg-transparent px-1 text-center text-sm text-foreground"
           />
         </>
       ) : (
@@ -411,13 +333,13 @@ function SetRow({
             type="number"
             value={set.weightKg ?? ""}
             onChange={(e) => onUpdate({ weightKg: Number(e.target.value) })}
-            className="h-8 w-full rounded-lg border bg-transparent px-1.5 text-sm text-foreground"
+            className="h-8 w-full min-w-0 rounded-lg border bg-transparent px-1 text-center text-sm text-foreground"
           />
           <input
             type="number"
             value={set.reps ?? ""}
             onChange={(e) => onUpdate({ reps: Number(e.target.value) })}
-            className="h-8 w-full rounded-lg border bg-transparent px-1.5 text-sm text-foreground"
+            className="h-8 w-full min-w-0 rounded-lg border bg-transparent px-1 text-center text-sm text-foreground"
           />
         </>
       )}

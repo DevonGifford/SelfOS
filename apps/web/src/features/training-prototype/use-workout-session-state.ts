@@ -1,10 +1,10 @@
 // PROTOTYPE — shared session state machine for the (single, now-decided)
 // logging UI. Answers ticket 02 on .scratch/training-feature/map.md, revised
-// after the Strong reference screenshots round.
+// after the Strong reference screenshots round and the shadcn refinement pass.
 
 import { useState } from "react";
 
-import type { Category, LoggedSet, SetType } from "@/features/training-prototype/fixtures";
+import type { Category, Exercise, LoggedSet, SetType } from "@/features/training-prototype/fixtures";
 import { EXERCISES, LAST_SESSION_SETS, TEMPLATES } from "@/features/training-prototype/fixtures";
 
 export type SessionStep = "start" | "logging" | "finished";
@@ -18,11 +18,22 @@ export function useWorkoutSessionState() {
   const [sessionNote, setSessionNote] = useState("");
   const [exerciseIds, setExerciseIds] = useState<string[]>([]);
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
+  const [exerciseNameOverrides, setExerciseNameOverrides] = useState<Record<string, string>>({});
+  // "New Exercise" from the Add Exercise flow — ad-hoc, session-scoped.
+  // A real build would create a genuine Exercise Definition via the API;
+  // here it's just enough to demonstrate the flow isn't a dead end.
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [sets, setSets] = useState<LoggedSet[]>([]);
   const [savedAsTemplate, setSavedAsTemplate] = useState(false);
   // Mock wall-clock times, editable via "Adjust start/end time" — ticket 03.
   const [startedAt, setStartedAt] = useState<Date | null>(null);
   const [finishedAt, setFinishedAt] = useState<Date | null>(null);
+
+  const allExercises = [...EXERCISES, ...customExercises];
+
+  function findExercise(exerciseId: string) {
+    return allExercises.find((e) => e.id === exerciseId);
+  }
 
   // A Template's suggested sets double, in this prototype, for the same
   // snapshot data LAST_SESSION_SETS already holds — seeded as *unconfirmed*
@@ -59,8 +70,43 @@ export function useWorkoutSessionState() {
     setStep("logging");
   }
 
+  // Always appends — exerciseIds is insertion-order, and every render walks
+  // it in that order, so "new exercises go to the bottom" falls out for
+  // free rather than needing separate position bookkeeping.
   function addExercise(exerciseId: string) {
     setExerciseIds((ids) => (ids.includes(exerciseId) ? ids : [...ids, exerciseId]));
+  }
+
+  function createExercise(name: string): Exercise {
+    const exercise: Exercise = {
+      id: `custom-${nextId++}`,
+      name,
+      type: "strength",
+      category: category ?? "freestyle",
+    };
+    setCustomExercises((list) => [...list, exercise]);
+    return exercise;
+  }
+
+  function removeExercise(exerciseId: string) {
+    setExerciseIds((ids) => ids.filter((id) => id !== exerciseId));
+    setSets((s) => s.filter((set) => set.exerciseId !== exerciseId));
+    setExerciseNotes(({ [exerciseId]: _removed, ...rest }) => rest);
+    setExerciseNameOverrides(({ [exerciseId]: _removed, ...rest }) => rest);
+  }
+
+  // Swaps the exercise at this slot for a different one, in place — matches
+  // Strong's "Replace exercise." Already-logged sets for the old exercise
+  // don't carry over (they were logged against a different exercise).
+  function replaceExercise(oldExerciseId: string, newExerciseId: string) {
+    setExerciseIds((ids) => ids.map((id) => (id === oldExerciseId ? newExerciseId : id)));
+    setSets((s) => s.filter((set) => set.exerciseId !== oldExerciseId));
+    setExerciseNotes(({ [oldExerciseId]: _removed, ...rest }) => rest);
+    setExerciseNameOverrides(({ [oldExerciseId]: _removed, ...rest }) => rest);
+  }
+
+  function renameExercise(exerciseId: string, name: string) {
+    setExerciseNameOverrides((overrides) => ({ ...overrides, [exerciseId]: name }));
   }
 
   function lastSetFor(exerciseId: string): LoggedSet | undefined {
@@ -75,7 +121,7 @@ export function useWorkoutSessionState() {
   }
 
   function addSet(exerciseId: string, overrides?: Partial<LoggedSet>) {
-    const exercise = EXERCISES.find((e) => e.id === exerciseId);
+    const exercise = findExercise(exerciseId);
     const last = suggestedFor(exerciseId);
 
     const set: LoggedSet = {
@@ -141,6 +187,8 @@ export function useWorkoutSessionState() {
     setSessionNote("");
     setExerciseIds([]);
     setExerciseNotes({});
+    setExerciseNameOverrides({});
+    setCustomExercises([]);
     setSets([]);
     setSavedAsTemplate(false);
     setStartedAt(null);
@@ -154,6 +202,8 @@ export function useWorkoutSessionState() {
     sessionNote,
     exerciseIds,
     exerciseNotes,
+    exerciseNameOverrides,
+    allExercises,
     sets,
     savedAsTemplate,
     startedAt,
@@ -162,6 +212,10 @@ export function useWorkoutSessionState() {
     startFromTemplate,
     startFreestyle,
     addExercise,
+    createExercise,
+    removeExercise,
+    replaceExercise,
+    renameExercise,
     addSet,
     updateSet,
     toggleConfirmed,
