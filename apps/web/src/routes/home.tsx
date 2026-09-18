@@ -4,6 +4,7 @@ import { StatusLastSession } from "@/features/status/last-session";
 import { StatusLineChart } from "@/features/status/line-chart";
 import { StatusNutrition } from "@/features/status/nutrition";
 import { useStatus } from "@/features/status/use-status";
+import { SESSION_TYPE_LABEL } from "@/features/training/labels";
 
 function daysRemainingInYear(from = new Date()) {
   const startOfToday = new Date(from.getFullYear(), from.getMonth(), from.getDate());
@@ -27,11 +28,14 @@ export function HomePage() {
 
   const daysRemaining = daysRemainingInYear();
 
+  const { unfinishedSession } = data.status.training;
+  const title = unfinishedSession ? `${SESSION_TYPE_LABEL[unfinishedSession.workoutType]} In Progress` : "Overview";
+
   return (
     <div className="p-4">
       <Header
         eyebrow={today}
-        title={`${data.status.training.focus} Day`}
+        title={title}
         subtitle={<span className="italic">{daysRemaining} days remaining</span>}
         note={
           <p className="font-mono text-xs italic font-thin text-muted-foreground">
@@ -58,7 +62,10 @@ export function HomePage() {
 
       <StatusNutrition nutrition={data.status.nutrition} />
 
-      <StatusLastSession session={data.lastSession} today={data.status.training.type} />
+      <StatusLastSession
+        lastFinishedSession={data.status.training.lastFinishedSession}
+        unfinishedSession={data.status.training.unfinishedSession}
+      />
 
       <StatusLineChart entries={data.dailyMinimums} />
 

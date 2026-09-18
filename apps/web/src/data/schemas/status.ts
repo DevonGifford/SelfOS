@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { TrainingDaySchema } from "@/data/schemas/training";
+import { SessionWorkoutTypeSchema } from "@/data/schemas/training-shared";
 
 const MacroTotalSchema = z.object({
   consumed: z.number(),
@@ -9,9 +9,12 @@ const MacroTotalSchema = z.object({
 
 export const StatusSchema = z.object({
   training: z.object({
-    type: TrainingDaySchema,
-    focus: z.string(),
-    tomorrow: z.string(),
+    lastFinishedSession: z
+      .object({ id: z.string(), workoutType: SessionWorkoutTypeSchema, date: z.string() })
+      .nullable(),
+    unfinishedSession: z
+      .object({ id: z.string(), workoutType: SessionWorkoutTypeSchema })
+      .nullable(),
   }),
   nutrition: z.object({
     calories: MacroTotalSchema,

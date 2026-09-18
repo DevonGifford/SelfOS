@@ -1,175 +1,104 @@
-import { DemoDataBadge } from "@/components/ui/demo-data-badge";
-import type { CardioSession, StrengthSession, TrainingSession } from "@/data/schemas/training-history";
+import { Link } from "react-router";
+
+import { SESSION_TYPE_LABEL } from "@/features/training/labels";
+import { useSessionExercises } from "@/features/training/use-session-exercises";
+import { useSessionSets } from "@/features/training/use-workout-sets";
+import { summarizeSessionSets } from "@/features/status/summarize-session-sets";
+import type { SessionWorkoutType } from "@/data/schemas/training-shared";
 
 type StatusLastSessionProps = {
-  session: TrainingSession | undefined;
-  today: "push" | "pull" | "legs" | "cardio" | "rest";
+  lastFinishedSession: { id: string; workoutType: SessionWorkoutType; date: string } | null;
+  unfinishedSession: { id: string; workoutType: SessionWorkoutType } | null;
 };
 
-function formatDuration(minutes: number) {
-  if (minutes < 60) return `${minutes} MIN`;
-  return `${Math.floor(minutes / 60)}H ${String(minutes % 60).padStart(2, "0")}M`;
+function formatRelativeDate(date: string): string {
+  const days = Math.round((Date.parse(`${date}T00:00:00`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00`)) / (24 * 60 * 60 * 1000));
+  if (days === 0) return "today";
+  if (days === -1) return "yesterday";
+  if (days < 0) return `${Math.abs(days)} days ago`;
+  return date;
 }
 
-function formatVolume(kg: number) {
-  return `${(kg / 1000).toFixed(1)}T`;
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.round(totalSeconds / 60);
+  return `${minutes} min`;
 }
 
-function formatPace(secondsPerUnit: number, unit: string) {
-  const minutes = Math.floor(secondsPerUnit / 60);
-  const seconds = Math.round(secondsPerUnit % 60);
-  return `${minutes}:${String(seconds).padStart(2, "0")} ${unit}`;
+function formatDistance(meters: number): string {
+  return `${(meters / 1000).toFixed(1)} km`;
 }
 
-function formatChange(percent: number) {
-  return `${percent > 0 ? "+" : ""}${percent}%`;
-}
-
-function formatCountDelta(value: number, unit: string) {
-  const sign = value > 0 ? "+" : "";
-  const label = Math.abs(value) === 1 ? unit : `${unit}S`;
-  return `${sign}${value} ${label}`;
-}
-
-function formatUnitDelta(value: number, unit: string) {
-  return `${value > 0 ? "+" : ""}${value} ${unit}`;
-}
-
-function formatPaceDelta(seconds: number, unit: string) {
-  const sign = seconds < 0 ? "-" : "+";
-  const abs = Math.abs(seconds);
-  const minutes = Math.floor(abs / 60);
-  const secs = Math.round(abs % 60);
-  return `${sign}${minutes}:${String(secs).padStart(2, "0")} ${unit}`;
-}
-
-function formatShortDate(date: string) {
-  return new Date(`${date}T00:00:00`)
-    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-    .toUpperCase();
-}
-
-function MetricColumn({
-  label,
-  value,
-  delta,
-}: {
-  label: string;
-  value: string;
-  delta: string | null;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text font-semibold">{value}</p>
-      <p className="font-mono text-[8px] uppercase tracking-wider text-muted-foreground -translate-y-1">{label}</p>
-      <p className="text-xs font-medium text-muted-foreground">{delta ?? "—"}</p>
+      <p className="text-sm font-semibold">{value}</p>
+      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function StrengthSummary({ session }: { session: StrengthSession }) {
-  return (
-    <div className="grid grid-cols-4 gap-2">
-      <MetricColumn
-        label="Sets"
-        value={`${session.workingSetsCompleted}/${session.workingSetsPlanned}`}
-        delta={session.setsDelta === null ? null : formatCountDelta(session.setsDelta, "SET")}
-      />
-      <MetricColumn
-        label="Reps"
-        value={`${session.repsCompleted}/${session.repsPlanned}`}
-        delta={session.repsDelta === null ? null : formatCountDelta(session.repsDelta, "REP")}
-      />
-      <MetricColumn
-        label="Duration"
-        value={formatDuration(session.durationMinutes)}
-        delta={session.durationDeltaMinutes === null ? null : formatUnitDelta(session.durationDeltaMinutes, "MIN")}
-      />
-      <MetricColumn
-        label="Volume"
-        value={formatVolume(session.volumeKg)}
-        delta={session.volumeDeltaPercent === null ? null : formatChange(session.volumeDeltaPercent)}
-      />
-    </div>
-  );
-}
+// Raw totals from the last finished Session's actual logged Sets — no
+// comparison against a previous session (that's the explicitly deferred
+// "deltas" feature, see .scratch/training-feature/map.md's "Not yet
+// specified"). Strength and cardio stats are independent: a Freestyle
+// session mixing both kinds shows both rows.
+function LastSessionStats({ sessionId }: { sessionId: string }) {
+  const sessionExercisesQuery = useSessionExercises(sessionId);
+  const sessionExerciseIds = (sessionExercisesQuery.data ?? []).map((se) => se.id);
+  const { bySessionExerciseId, isPending } = useSessionSets(sessionExerciseIds);
 
-function getPerformanceColumn(session: CardioSession): { label: string; value: string; delta: string | null } {
-  if (session.activity === "cycle") {
-    return {
-      label: "Avg speed",
-      value: `${session.averageSpeedKmh}KM/H`,
-      delta: session.averageSpeedDeltaKmh === null ? null : formatUnitDelta(session.averageSpeedDeltaKmh, "KM/H"),
-    };
-  }
+  if (sessionExercisesQuery.isPending || isPending) return null;
 
-  if (session.activity === "swim") {
-    return {
-      label: "Avg pace",
-      value: formatPace(session.averageSwimPaceSecondsPer100m!, "/100M"),
-      delta:
-        session.averageSwimPaceDeltaSecondsPer100m === null
-          ? null
-          : formatPaceDelta(session.averageSwimPaceDeltaSecondsPer100m, "/100M"),
-    };
-  }
+  const allSets = sessionExerciseIds.flatMap((id) => bySessionExerciseId.get(id) ?? []);
+  const summary = summarizeSessionSets(allSets);
 
-  return {
-    label: "Avg pace",
-    value: formatPace(session.averagePaceSecondsPerKm!, "/KM"),
-    delta:
-      session.averagePaceDeltaSecondsPerKm === null
-        ? null
-        : formatPaceDelta(session.averagePaceDeltaSecondsPerKm, "/KM"),
-  };
-}
-
-function CardioSummary({ session }: { session: CardioSession }) {
-  const performance = getPerformanceColumn(session);
+  if (summary.strengthSetsCount === 0 && summary.cardioSetsCount === 0) return null;
 
   return (
-    <div className="grid grid-cols-4">
-      <MetricColumn label="Type" value={session.activity.toUpperCase()} delta="" />
-      <MetricColumn
-        label="Duration"
-        value={formatDuration(session.durationMinutes)}
-        delta={session.durationDeltaMinutes === null ? null : formatUnitDelta(session.durationDeltaMinutes, "MIN")}
-      />
-      <MetricColumn
-        label="Distance"
-        value={`${session.distanceKm} KM`}
-        delta={session.distanceDeltaKm === null ? null : formatUnitDelta(session.distanceDeltaKm, "KM")}
-      />
-      <MetricColumn {...performance} />
+    <div className="mt-3 flex gap-6">
+      {summary.strengthSetsCount > 0 ? (
+        <>
+          <Stat label="Sets" value={String(summary.strengthSetsCount)} />
+          <Stat label="Volume" value={`${Math.round(summary.volumeKg)} kg`} />
+        </>
+      ) : null}
+      {summary.cardioSetsCount > 0 ? (
+        <>
+          <Stat label="Duration" value={formatDuration(summary.durationSec)} />
+          <Stat label="Distance" value={formatDistance(summary.distanceM)} />
+        </>
+      ) : null}
     </div>
   );
 }
 
-export function StatusLastSession({ session, today }: StatusLastSessionProps) {
+export function StatusLastSession({ lastFinishedSession, unfinishedSession }: StatusLastSessionProps) {
   return (
     <section className="mt-8 border-t pt-2">
-      <div className="flex items-center justify-between">
-        <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Last Session</h2>
-        <DemoDataBadge domain="training" />
-      </div>
+      <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Training</h2>
 
-      {!session ? (
-        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-          No previous {today} session
+      {unfinishedSession ? (
+        <Link
+          to="/training"
+          className="mt-2 flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium"
+        >
+          Resume {SESSION_TYPE_LABEL[unfinishedSession.workoutType]} workout
+          <span aria-hidden>→</span>
+        </Link>
+      ) : null}
+
+      {!lastFinishedSession ? (
+        <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+          No workouts logged yet
         </p>
       ) : (
-        <div className="space-y-3">
-          <p className="font-mono font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-            {session.type === "strength" ? session.routine : session.activity} ·{" "}
-            {formatShortDate(session.date)}
+        <>
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            Last workout: {SESSION_TYPE_LABEL[lastFinishedSession.workoutType]} ·{" "}
+            {formatRelativeDate(lastFinishedSession.date)}
           </p>
-
-          {session.type === "strength" ? (
-            <StrengthSummary session={session} />
-          ) : (
-            <CardioSummary session={session} />
-          )}
-        </div>
+          <LastSessionStats sessionId={lastFinishedSession.id} />
+        </>
       )}
     </section>
   );

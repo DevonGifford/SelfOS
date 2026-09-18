@@ -25,8 +25,16 @@ A Habit is the Definition (name, active, schedule). A Habit Entry is the Event �
 **Food** vs **Food Entry**:
 A Food is the Definition (name, serving size, calories/macros per serving). A Food Entry is the Event — a snapshot of those macros at the moment it was logged, independent of later edits to the Food definition.
 
+**Workout Type**:
+The high-level training category — Push, Pull, Legs, or Cardio — plus **Freestyle**, which is a Workout Type in the schema (a Workout Session needs one, and it's what keeps Freestyle sessions out of Push/Pull/Legs/Cardio's progression lookups) but not a real one anywhere else: it has no Workout Templates, and Exercises are never tagged Freestyle. Exercises and Workout Templates only ever carry Push/Pull/Legs/Cardio. Workout Types are fixed categories, not individual saved routines — that's what a Workout Template is.
+_Avoid_: category (say Workout Type)
+
 **Exercise** vs **Workout Session** vs **Workout Set**:
-An Exercise is the Definition (e.g. "Bench Press"). A Workout Session is one training occasion (e.g. today's Push day). A Workout Set is one Event within that session (weight/reps, or duration/distance, for one set of one exercise).
+An Exercise is the Definition (e.g. "Bench Press"), tagged with a type (strength or cardio, deciding which fields a Set logs) and a Workout Type (Push/Pull/Legs/Cardio). A Workout Session is one training occasion, itself carrying a Workout Type (including Freestyle) — a Session persists as soon as it starts, not only once finished, so it can be "in progress." A Session started freely diverges from whatever Workout Template it began from (exercises, order, sets can all change) without that ever touching the Template itself. Each Exercise done within a Session carries its own note (e.g. "shoulder feeling off today"), separate from any note on the Session itself. A Workout Set is one Event within that: weight/reps, or duration/distance, for one set of one exercise, tagged as a warm-up, a working set, a failure set, or a drop set.
+
+**Workout Template**:
+A named, reusable Definition belonging to one Workout Type (Push/Pull/Legs/Cardio only — Freestyle never has Templates) — a suggested list of exercises, order, and planned sets to start a Session from (e.g. "Push Day"). Each Workout Type has exactly one **default** Template (the obvious starting choice) plus zero or more alternates; a Template can be **archived** (hidden from the start-workout picker, history untouched — the default Template can't be archived until another becomes default). Names only need to be unique within their Workout Type ("Push Heavy" and "Pull Heavy" can coexist). Created either by an explicit Save-as-Template action or, at any time later, by snapshotting a finished Session's actual exercises/order/sets into a new Template, or into the Session's own source Template in place — either way, a one-way copy: editing a Template afterward never changes Sessions already logged from it, the same snapshot rule a Food Entry follows against its Food.
+_Avoid_: Routine, plan, workout plan
 
 **Weight** — ambiguous, disambiguate explicitly:
 Two unrelated concepts share this word here: **body weight** (the Weight domain — what the user weighs) and **load** (`workout_sets.weight_kg` — how much the user lifted). Never use bare "weight" where both are in scope.

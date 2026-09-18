@@ -5,19 +5,19 @@ import { useHabitsHistory } from "@/features/habits/use-habits-history";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
 import { useNutrition } from "@/features/nutrition/use-nutrition";
-import { selectLastComparableSession } from "@/features/training/select-last-comparable-session";
-import { useTraining } from "@/features/training/use-training";
-import { useTrainingHistory } from "@/features/training/use-training-history";
+import { useUnfinishedWorkoutSession, useWorkoutSessions } from "@/features/training/use-workout-sessions";
+import type { WorkoutSessions } from "@/data/schemas/workout-sessions";
 
 import { deriveStatus } from "./derive-status";
 
 // The single hook routes/home.tsx calls — same {data, isPending, isError}
 // shape as every other domain hook (features/*/use-*.ts), even though this
-// one composes seven queries internally. This is what makes Status a module
-// rather than a route: the orchestration lives here, once, not in the page.
+// one composes several queries internally. This is what makes Status a
+// module rather than a route: the orchestration lives here, once, not in
+// the page.
 export function useStatus() {
-  const trainingQuery = useTraining();
-  const trainingHistoryQuery = useTrainingHistory();
+  const sessionsQuery = useWorkoutSessions();
+  const unfinishedSessionQuery = useUnfinishedWorkoutSession();
   const nutritionQuery = useNutrition();
   const habitsQuery = useHabits();
   const habitEntriesQuery = useHabitEntries();
@@ -25,8 +25,8 @@ export function useStatus() {
   const measurementsQuery = useMeasurements();
 
   const queries = [
-    trainingQuery,
-    trainingHistoryQuery,
+    sessionsQuery,
+    unfinishedSessionQuery,
     nutritionQuery,
     habitsQuery,
     habitEntriesQuery,
@@ -38,8 +38,8 @@ export function useStatus() {
   const isError = queries.some((query) => query.isError);
 
   const data =
-    trainingQuery.data &&
-    trainingHistoryQuery.data &&
+    sessionsQuery.data &&
+    unfinishedSessionQuery.data !== undefined &&
     nutritionQuery.data &&
     habitsQuery.data &&
     habitEntriesQuery.data &&
@@ -47,20 +47,29 @@ export function useStatus() {
     measurementsQuery.data
       ? {
           status: deriveStatus(
-            trainingQuery.data,
+            {
+              lastFinishedSession: selectLastFinishedSession(sessionsQuery.data),
+              unfinishedSession: unfinishedSessionQuery.data
+                ? { id: unfinishedSessionQuery.data.id, workoutType: unfinishedSessionQuery.data.workoutType }
+                : null,
+            },
             nutritionQuery.data,
             habitsQuery.data,
             habitEntriesQuery.data,
             todayString(),
           ),
           dailyMinimums: selectDailyMinimums(measurementsQuery.data),
-          lastSession: selectLastComparableSession(
-            trainingHistoryQuery.data,
-            trainingQuery.data.type,
-          ),
           habitsHistory: habitsHistoryQuery.data,
         }
       : undefined;
 
   return { data, isPending, isError };
+}
+
+function selectLastFinishedSession(sessions: WorkoutSessions) {
+  const finished = sessions.filter((s) => s.finishedAt !== null);
+  if (finished.length === 0) return null;
+
+  const latest = finished.reduce((a, b) => (a.date >= b.date ? a : b));
+  return { id: latest.id, workoutType: latest.workoutType, date: latest.date };
 }

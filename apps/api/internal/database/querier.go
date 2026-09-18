@@ -11,34 +11,73 @@ import (
 )
 
 type Querier interface {
+	ArchiveWorkoutTemplate(ctx context.Context, id pgtype.UUID) (WorkoutTemplate, error)
+	ClearDefaultWorkoutTemplate(ctx context.Context, workoutType string) error
 	CountActiveHabits(ctx context.Context) (int64, error)
+	CreateExercise(ctx context.Context, arg CreateExerciseParams) (Exercise, error)
 	CreateFood(ctx context.Context, arg CreateFoodParams) (Food, error)
 	CreateFoodEntry(ctx context.Context, arg CreateFoodEntryParams) (FoodEntry, error)
 	CreateHabit(ctx context.Context, name string) (Habit, error)
 	CreateHabitEntry(ctx context.Context, arg CreateHabitEntryParams) (HabitEntry, error)
 	CreateMeasurement(ctx context.Context, arg CreateMeasurementParams) (Measurement, error)
 	CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error)
+	CreateWorkoutSession(ctx context.Context, arg CreateWorkoutSessionParams) (WorkoutSession, error)
+	CreateWorkoutSessionExercise(ctx context.Context, arg CreateWorkoutSessionExerciseParams) (WorkoutSessionExercise, error)
+	CreateWorkoutSet(ctx context.Context, arg CreateWorkoutSetParams) (WorkoutSet, error)
+	CreateWorkoutTemplate(ctx context.Context, arg CreateWorkoutTemplateParams) (WorkoutTemplate, error)
+	CreateWorkoutTemplateSet(ctx context.Context, arg CreateWorkoutTemplateSetParams) (WorkoutTemplateSet, error)
+	DeleteExercise(ctx context.Context, id pgtype.UUID) error
 	DeleteFood(ctx context.Context, id pgtype.UUID) error
 	DeleteFoodEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteHabitEntry(ctx context.Context, id pgtype.UUID) error
 	DeleteMeasurement(ctx context.Context, id pgtype.UUID) error
+	DeleteWorkoutSession(ctx context.Context, id pgtype.UUID) error
+	DeleteWorkoutSessionExercise(ctx context.Context, id pgtype.UUID) error
+	DeleteWorkoutSet(ctx context.Context, id pgtype.UUID) error
+	DeleteWorkoutSetsBySessionExercise(ctx context.Context, sessionExerciseID pgtype.UUID) error
+	DeleteWorkoutTemplateSetsByTemplate(ctx context.Context, templateID pgtype.UUID) error
+	FinishWorkoutSession(ctx context.Context, id pgtype.UUID) (WorkoutSession, error)
 	GetConfiguration(ctx context.Context) (Configuration, error)
+	GetExercise(ctx context.Context, id pgtype.UUID) (Exercise, error)
 	GetFood(ctx context.Context, id pgtype.UUID) (Food, error)
 	GetFoodEntry(ctx context.Context, id pgtype.UUID) (FoodEntry, error)
 	GetHabit(ctx context.Context, id pgtype.UUID) (Habit, error)
+	// Progressive overload: the last Session-Exercise for this Exercise, from
+	// the last Session of the given Workout Type — a two-step lookup (this,
+	// then ListWorkoutSetsBySessionExercise for its sets) rather than one
+	// complex join, matching how the rest of this codebase composes simple
+	// queries in the handler instead of building the joined result in SQL.
+	GetLastSessionExerciseForType(ctx context.Context, arg GetLastSessionExerciseForTypeParams) (WorkoutSessionExercise, error)
 	GetTokenByHash(ctx context.Context, tokenHash string) (Token, error)
+	GetUnfinishedWorkoutSession(ctx context.Context) (WorkoutSession, error)
+	GetWorkoutSession(ctx context.Context, id pgtype.UUID) (WorkoutSession, error)
+	GetWorkoutTemplate(ctx context.Context, id pgtype.UUID) (WorkoutTemplate, error)
+	ListExercises(ctx context.Context) ([]Exercise, error)
 	ListFoodEntries(ctx context.Context) ([]FoodEntry, error)
 	ListFoods(ctx context.Context) ([]Food, error)
 	ListHabitEntries(ctx context.Context) ([]HabitEntry, error)
 	ListHabits(ctx context.Context) ([]Habit, error)
 	ListMeasurements(ctx context.Context) ([]Measurement, error)
+	ListWorkoutSessionExercises(ctx context.Context, sessionID pgtype.UUID) ([]WorkoutSessionExercise, error)
+	ListWorkoutSessions(ctx context.Context) ([]WorkoutSession, error)
+	ListWorkoutSetsBySession(ctx context.Context, sessionID pgtype.UUID) ([]WorkoutSet, error)
+	ListWorkoutSetsBySessionExercise(ctx context.Context, sessionExerciseID pgtype.UUID) ([]WorkoutSet, error)
+	ListWorkoutTemplateSets(ctx context.Context, templateID pgtype.UUID) ([]WorkoutTemplateSet, error)
+	ListWorkoutTemplates(ctx context.Context) ([]WorkoutTemplate, error)
 	ReorderHabits(ctx context.Context, ids []pgtype.UUID) error
+	ReorderWorkoutSessionExercises(ctx context.Context, ids []pgtype.UUID) error
+	ReplaceWorkoutSessionExerciseExercise(ctx context.Context, arg ReplaceWorkoutSessionExerciseExerciseParams) (WorkoutSessionExercise, error)
+	RestoreWorkoutTemplate(ctx context.Context, id pgtype.UUID) (WorkoutTemplate, error)
 	RevokeToken(ctx context.Context, id pgtype.UUID) error
+	SetDefaultWorkoutTemplate(ctx context.Context, id pgtype.UUID) (WorkoutTemplate, error)
 	UpdateConfiguration(ctx context.Context, arg UpdateConfigurationParams) (Configuration, error)
 	UpdateFood(ctx context.Context, arg UpdateFoodParams) (Food, error)
 	UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEntryQuantityParams) (FoodEntry, error)
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error)
 	UpdateMeasurement(ctx context.Context, arg UpdateMeasurementParams) (Measurement, error)
+	UpdateWorkoutSession(ctx context.Context, arg UpdateWorkoutSessionParams) (WorkoutSession, error)
+	UpdateWorkoutSessionExercise(ctx context.Context, arg UpdateWorkoutSessionExerciseParams) (WorkoutSessionExercise, error)
+	UpdateWorkoutSet(ctx context.Context, arg UpdateWorkoutSetParams) (WorkoutSet, error)
 }
 
 var _ Querier = (*Queries)(nil)

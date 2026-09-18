@@ -4,13 +4,10 @@ import { deriveStatus } from "@/features/status/derive-status";
 import type { HabitEntries } from "@/data/schemas/habit-entries";
 import type { Habits } from "@/data/schemas/habits";
 import type { Nutrition } from "@/data/schemas/nutrition";
-import type { Training } from "@/data/schemas/training";
 
-const training: Training = {
-  type: "push",
-  split: "Push",
-  tomorrow: "Pull",
-  exercises: [],
+const training = {
+  lastFinishedSession: { id: "sess-1", workoutType: "push" as const, date: "2026-09-11" },
+  unfinishedSession: null,
 };
 
 const nutrition: Nutrition = {
@@ -35,9 +32,9 @@ const entries: HabitEntries = [
 ];
 
 describe("deriveStatus", () => {
-  it("carries training's type/split/tomorrow through as focus/tomorrow", () => {
+  it("carries the training status through unchanged", () => {
     const status = deriveStatus(training, nutrition, habits, entries, today);
-    expect(status.training).toEqual({ type: "push", focus: "Push", tomorrow: "Pull" });
+    expect(status.training).toEqual(training);
   });
 
   it("passes nutrition totals through unchanged", () => {

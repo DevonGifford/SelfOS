@@ -3,7 +3,12 @@ import type { HabitEntries } from "@/data/schemas/habit-entries";
 import type { Habits } from "@/data/schemas/habits";
 import type { Nutrition } from "@/data/schemas/nutrition";
 import type { Status } from "@/data/schemas/status";
-import type { Training } from "@/data/schemas/training";
+import type { SessionWorkoutType } from "@/data/schemas/training-shared";
+
+type TrainingStatus = {
+  lastFinishedSession: { id: string; workoutType: SessionWorkoutType; date: string } | null;
+  unfinishedSession: { id: string; workoutType: SessionWorkoutType } | null;
+};
 
 // Status is a read model (CONTEXT.md), never its own source of truth —
 // this composes already-fetched domain data rather than fetching anything
@@ -11,18 +16,14 @@ import type { Training } from "@/data/schemas/training";
 // a time instead of silently keeping a stale aggregate for whichever
 // domain hasn't gone real yet.
 export function deriveStatus(
-  training: Training,
+  training: TrainingStatus,
   nutrition: Nutrition,
   habits: Habits,
   habitEntries: HabitEntries,
   today: string,
 ): Status {
   return {
-    training: {
-      type: training.type,
-      focus: training.split,
-      tomorrow: training.tomorrow,
-    },
+    training,
     nutrition: {
       calories: nutrition.totals.calories,
       protein: nutrition.totals.protein,
