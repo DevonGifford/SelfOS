@@ -35,6 +35,16 @@ func validateQuantity(quantity float64) map[string]string {
 	return errs
 }
 
+var mealSlots = map[string]bool{"breakfast": true, "snack": true, "lunch": true, "tea": true, "dinner": true}
+
+func validateMealSlot(slot string) map[string]string {
+	errs := map[string]string{}
+	if !mealSlots[slot] {
+		errs["mealSlot"] = "must be one of breakfast, snack, lunch, tea, dinner"
+	}
+	return errs
+}
+
 func validateEntryDate(date string) map[string]string {
 	errs := map[string]string{}
 

@@ -52,9 +52,9 @@ func (q *Queries) CreateFood(ctx context.Context, arg CreateFoodParams) (Food, e
 }
 
 const createFoodEntry = `-- name: CreateFoodEntry :one
-insert into food_entries (food_id, name, quantity, calories, protein, carbs, fat, date)
-values ($1, $2, $3, $4, $5, $6, $7, $8)
-returning id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at
+insert into food_entries (food_id, name, quantity, calories, protein, carbs, fat, date, meal_slot)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at, meal_slot
 `
 
 type CreateFoodEntryParams struct {
@@ -66,6 +66,7 @@ type CreateFoodEntryParams struct {
 	Carbs    pgtype.Numeric `json:"carbs"`
 	Fat      pgtype.Numeric `json:"fat"`
 	Date     pgtype.Date    `json:"date"`
+	MealSlot string         `json:"meal_slot"`
 }
 
 func (q *Queries) CreateFoodEntry(ctx context.Context, arg CreateFoodEntryParams) (FoodEntry, error) {
@@ -78,6 +79,7 @@ func (q *Queries) CreateFoodEntry(ctx context.Context, arg CreateFoodEntryParams
 		arg.Carbs,
 		arg.Fat,
 		arg.Date,
+		arg.MealSlot,
 	)
 	var i FoodEntry
 	err := row.Scan(
@@ -91,6 +93,7 @@ func (q *Queries) CreateFoodEntry(ctx context.Context, arg CreateFoodEntryParams
 		&i.Fat,
 		&i.Date,
 		&i.CreatedAt,
+		&i.MealSlot,
 	)
 	return i, err
 }
@@ -137,7 +140,7 @@ func (q *Queries) GetFood(ctx context.Context, id pgtype.UUID) (Food, error) {
 }
 
 const getFoodEntry = `-- name: GetFoodEntry :one
-select id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at from food_entries
+select id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at, meal_slot from food_entries
 where id = $1
 `
 
@@ -155,12 +158,13 @@ func (q *Queries) GetFoodEntry(ctx context.Context, id pgtype.UUID) (FoodEntry, 
 		&i.Fat,
 		&i.Date,
 		&i.CreatedAt,
+		&i.MealSlot,
 	)
 	return i, err
 }
 
 const listFoodEntries = `-- name: ListFoodEntries :many
-select id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at from food_entries
+select id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at, meal_slot from food_entries
 order by date desc, created_at desc
 `
 
@@ -184,6 +188,7 @@ func (q *Queries) ListFoodEntries(ctx context.Context) ([]FoodEntry, error) {
 			&i.Fat,
 			&i.Date,
 			&i.CreatedAt,
+			&i.MealSlot,
 		); err != nil {
 			return nil, err
 		}
@@ -278,9 +283,9 @@ func (q *Queries) UpdateFood(ctx context.Context, arg UpdateFoodParams) (Food, e
 
 const updateFoodEntryQuantity = `-- name: UpdateFoodEntryQuantity :one
 update food_entries
-set quantity = $2, calories = $3, protein = $4, carbs = $5, fat = $6
+set quantity = $2, calories = $3, protein = $4, carbs = $5, fat = $6, meal_slot = $7
 where id = $1
-returning id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at
+returning id, food_id, name, quantity, calories, protein, carbs, fat, date, created_at, meal_slot
 `
 
 type UpdateFoodEntryQuantityParams struct {
@@ -290,6 +295,7 @@ type UpdateFoodEntryQuantityParams struct {
 	Protein  pgtype.Numeric `json:"protein"`
 	Carbs    pgtype.Numeric `json:"carbs"`
 	Fat      pgtype.Numeric `json:"fat"`
+	MealSlot string         `json:"meal_slot"`
 }
 
 func (q *Queries) UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEntryQuantityParams) (FoodEntry, error) {
@@ -300,6 +306,7 @@ func (q *Queries) UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEnt
 		arg.Protein,
 		arg.Carbs,
 		arg.Fat,
+		arg.MealSlot,
 	)
 	var i FoodEntry
 	err := row.Scan(
@@ -313,6 +320,7 @@ func (q *Queries) UpdateFoodEntryQuantity(ctx context.Context, arg UpdateFoodEnt
 		&i.Fat,
 		&i.Date,
 		&i.CreatedAt,
+		&i.MealSlot,
 	)
 	return i, err
 }

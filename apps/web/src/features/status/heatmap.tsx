@@ -1,4 +1,5 @@
 import type { HabitHistoryEntry } from "@/data/schemas/habits-history";
+import { StatusSection } from "@/features/status/status-section";
 import { cn } from "@/lib/utils";
 
 type StatusHeatmapProps = {
@@ -35,12 +36,9 @@ function formatDate(dateStr: string) {
 
 export function StatusHeatmap({ entries }: StatusHeatmapProps) {
   return (
-    <section className="mt-8 border-t pt-4">
-      <h2 className="font-mono font-extrabold text-xs uppercase tracking-widest">Habits Graph</h2>
-      <div className="mt-4">
-        <HabitHeatmap entries={entries} />
-      </div>
-    </section>
+    <StatusSection title="Habits Graph" className="mt-4">
+      <HabitHeatmap entries={entries} />
+    </StatusSection>
   );
 }
 

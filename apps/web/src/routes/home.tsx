@@ -1,8 +1,9 @@
 import { Header } from "@/components/ui/header";
+import { WeightSparkline } from "@/features/measurements/weight-sparkline";
 import { StatusHeatmap } from "@/features/status/heatmap";
 import { StatusLastSession } from "@/features/status/last-session";
-import { StatusLineChart } from "@/features/status/line-chart";
 import { StatusNutrition } from "@/features/status/nutrition";
+import { StatusSection } from "@/features/status/status-section";
 import { useStatus } from "@/features/status/use-status";
 import { SESSION_TYPE_LABEL } from "@/features/training/labels";
 
@@ -39,7 +40,7 @@ export function HomePage() {
         subtitle={<span className="italic">{daysRemaining} days remaining</span>}
         note={
           <p className="font-mono text-xs italic font-thin text-muted-foreground">
-            todo/ either quote or warning message
+            todo/ either quote or warning
           </p>
         }
         primary={{
@@ -67,7 +68,11 @@ export function HomePage() {
         unfinishedSession={data.status.training.unfinishedSession}
       />
 
-      <StatusLineChart entries={data.dailyMinimums} />
+      {data.dailyMinimums.length > 0 && (
+        <StatusSection title="30-day trend" className="mt-4">
+          <WeightSparkline entries={data.dailyMinimums} showStats showLabel={false} />
+        </StatusSection>
+      )}
 
       <StatusHeatmap entries={data.habitsHistory} />
     </div>

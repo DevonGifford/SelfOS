@@ -1,20 +1,19 @@
 import { useState } from "react";
-import { Home, Menu, UtensilsCrossed, X } from "lucide-react";
+import { Home, Menu, Plus, X } from "lucide-react";
 import { NavLink } from "react-router";
 
 import { NavDrawer } from "@/components/layout/nav-drawer";
+import { QuickLogDrawer } from "@/components/layout/quick-log-drawer";
 import { cn } from "@/lib/utils";
 
-// Home and Nutrition get direct slots (highest-frequency actions —
-// .scratch/bottom-nav-wayfinding/map.md); every other section moves into
-// the drawer the third slot opens.
-const NAV_ITEMS = [
-  { to: "/home", label: "Home", icon: Home },
-  { to: "/nutrition", label: "Nutrition", icon: UtensilsCrossed },
-];
+// Home is the one direct link slot (highest-frequency destination —
+// .scratch/bottom-nav-wayfinding/map.md); Menu and Add both open drawers
+// rather than routing directly.
+const NAV_ITEMS = [{ to: "/home", label: "Home", icon: Home }];
 
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
 
   return (
     <>
@@ -49,10 +48,21 @@ export function BottomNav() {
               </span>
             </NavLink>
           ))}
+
+          <button
+            type="button"
+            onClick={() => setQuickLogOpen((isOpen) => !isOpen)}
+            className="flex flex-1 flex-col items-center justify-center py-3 text-muted-foreground transition-colors"
+          >
+            <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Plus className="size-6" />
+            </span>
+          </button>
         </nav>
       </div>
 
       <NavDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <QuickLogDrawer open={quickLogOpen} onOpenChange={setQuickLogOpen} />
     </>
   );
 }

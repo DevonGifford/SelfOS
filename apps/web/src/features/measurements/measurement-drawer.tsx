@@ -21,6 +21,7 @@ type MeasurementDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry?: WeightEntry;
+  latestKg?: number;
 };
 
 function todayString() {
@@ -34,11 +35,15 @@ function todayString() {
 // The caller remounts this component (via `key`) each time the drawer
 // opens, so plain useState initializers are enough to reset the form —
 // no effect needed to sync state on every open.
-export function MeasurementDrawer({ open, onOpenChange, entry }: MeasurementDrawerProps) {
+export function MeasurementDrawer({ open, onOpenChange, entry, latestKg }: MeasurementDrawerProps) {
   const isEdit = entry !== undefined;
 
+  // Prefilling (not placeholder-only) with the last recorded weight lets a
+  // same-ballpark re-weigh be a quick nudge (88.6 -> 88.4) instead of
+  // retyping the whole value. Only applies when adding — editing a
+  // historical entry still starts from that entry's own value.
+  const [kg, setKg] = useState(entry ? String(entry.kg) : latestKg !== undefined ? String(latestKg) : "");
   const [date, setDate] = useState(entry?.date ?? todayString());
-  const [kg, setKg] = useState(entry ? String(entry.kg) : "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const createMutation = useCreateMeasurement();
@@ -92,24 +97,6 @@ export function MeasurementDrawer({ open, onOpenChange, entry }: MeasurementDraw
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
           <div>
             <label
-              htmlFor="measurement-date"
-              className="font-mono text-xs uppercase tracking-wider text-muted-foreground"
-            >
-              Date
-            </label>
-            <input
-              id="measurement-date"
-              type="date"
-              value={date}
-              max={todayString()}
-              onChange={(event) => setDate(event.target.value)}
-              className="mt-1 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-            />
-            {errors.date && <p className="mt-1 text-xs text-destructive">{errors.date}</p>}
-          </div>
-
-          <div>
-            <label
               htmlFor="measurement-kg"
               className="font-mono text-xs uppercase tracking-wider text-muted-foreground"
             >
@@ -122,9 +109,30 @@ export function MeasurementDrawer({ open, onOpenChange, entry }: MeasurementDraw
               inputMode="decimal"
               value={kg}
               onChange={(event) => setKg(event.target.value)}
-              className="mt-1 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border bg-transparent px-3 py-3 text-center text-3xl font-semibold tabular-nums"
             />
             {errors.kg && <p className="mt-1 text-xs text-destructive">{errors.kg}</p>}
+            {!isEdit && latestKg !== undefined && (
+              <p className="mt-1 text-center text-xs text-muted-foreground">Previous: {latestKg} kg</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="measurement-date"
+              className="font-mono text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Date
+            </label>
+            <input
+              id="measurement-date"
+              type="date"
+              value={date}
+              max={todayString()}
+              onChange={(event) => setDate(event.target.value)}
+              className="mt-1 w-full rounded-md border bg-transparent px-3 py-1.5 text-sm text-muted-foreground"
+            />
+            {errors.date && <p className="mt-1 text-xs text-destructive">{errors.date}</p>}
           </div>
 
           <DrawerFooter>

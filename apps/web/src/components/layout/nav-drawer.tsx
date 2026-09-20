@@ -4,8 +4,14 @@ import { Link, useLocation } from "react-router";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerSwipeArea, DrawerTitle } from "@/components/ui/drawer";
 import { logout } from "@/data/auth-client";
 import { exitGuestSession, isGuestSession } from "@/data/guest";
+import { cn } from "@/lib/utils";
 
-const LINK_CLASS = "flex items-center gap-3 rounded-md px-2 py-2.5 text-sm hover:bg-muted";
+const LINK_CLASS =
+  "flex items-center gap-3 rounded-md px-3 py-3.5 text-base hover:bg-muted active:bg-muted";
+const LINK_ICON_CLASS = "size-5 shrink-0";
+// Faint, not the full-strength `text-destructive` used for Delete — this
+// is a sign-out action, not a destructive one, just worth a quiet warning tint.
+const SIGN_OUT_LINK_CLASS = cn(LINK_CLASS, "text-destructive/70");
 
 // Every major section, always shown regardless of current page — no
 // "hide current page" logic, and no exception for Status/Nutrition just
@@ -79,18 +85,18 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
           )}
         </DrawerHeader>
 
-        <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
+        <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
           {extras && (
             <>
               <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 This Page
               </p>
               <Link to={extras.action.to} onClick={close} className={LINK_CLASS}>
-                <Plus className="size-4" />
+                <Plus className={LINK_ICON_CLASS} />
                 {extras.action.label}
               </Link>
               <Link to={extras.analytics.to} onClick={close} className={LINK_CLASS}>
-                <BarChart3 className="size-4" />
+                <BarChart3 className={LINK_ICON_CLASS} />
                 {extras.analytics.label}
               </Link>
             </>
@@ -100,16 +106,16 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
 
           {SECTION_LINKS.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} onClick={close} className={LINK_CLASS}>
-              <Icon className="size-4" />
+              <Icon className={LINK_ICON_CLASS} />
               {label}
             </Link>
           ))}
         </div>
 
         <DrawerFooter>
-          <div className="flex flex-col gap-1 border-t pt-3">
+          <div className="flex flex-col gap-1.5 border-t pt-3">
             <Link to="/settings" onClick={close} className={LINK_CLASS}>
-              <Settings className="size-4" />
+              <Settings className={LINK_ICON_CLASS} />
               Settings
             </Link>
             {isGuest ? (
@@ -120,9 +126,9 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
                   exitGuestSession();
                   window.location.assign("/login");
                 }}
-                className={LINK_CLASS}
+                className={SIGN_OUT_LINK_CLASS}
               >
-                <LogOut className="size-4" />
+                <LogOut className={LINK_ICON_CLASS} />
                 Exit Guest Mode
               </button>
             ) : (
@@ -132,9 +138,9 @@ export function NavDrawer({ open, onOpenChange }: NavDrawerProps) {
                   close();
                   void logout();
                 }}
-                className={LINK_CLASS}
+                className={SIGN_OUT_LINK_CLASS}
               >
-                <LogOut className="size-4" />
+                <LogOut className={LINK_ICON_CLASS} />
                 Log Out
               </button>
             )}

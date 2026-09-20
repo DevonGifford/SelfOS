@@ -92,6 +92,7 @@ type FoodEntry struct {
 	Fat       pgtype.Numeric     `json:"fat"`
 	Date      pgtype.Date        `json:"date"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	MealSlot  string             `json:"meal_slot"`
 }
 
 type Habit struct {

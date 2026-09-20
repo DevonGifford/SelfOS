@@ -1,17 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
-import { SectionStat } from "@/components/ui/section-stat";
 import { ApiError } from "@/data/http";
 import type { Weight, WeightEntry } from "@/data/schemas/weight";
 import { MeasurementDrawer } from "@/features/measurements/measurement-drawer";
 import { selectDailyMinimums } from "@/features/measurements/select-daily-minimums";
 import { useMeasurements } from "@/features/measurements/use-measurements";
 import { WeightSparkline } from "@/features/measurements/weight-sparkline";
+import { cn } from "@/lib/utils";
 import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
-
-const PAGE_SIZE = 30;
 
 function formatDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
@@ -31,6 +30,25 @@ function sortForJournal(entries: Weight): Weight {
   });
 }
 
+type DateGroup = { date: string; primary: WeightEntry; extras: WeightEntry[] };
+
+// sortForJournal already orders same-date entries lowest-kg-first, so a
+// group's `primary` is always that date's minimum — the same entry
+// selectDailyMinimums would pick. No separate "is this the day min" check
+// needed; extras are simply whatever's left after the first same-date entry.
+function groupByDate(entries: Weight): DateGroup[] {
+  const groups: DateGroup[] = [];
+  for (const entry of entries) {
+    const last = groups.at(-1);
+    if (last && last.date === entry.date) {
+      last.extras.push(entry);
+    } else {
+      groups.push({ date: entry.date, primary: entry, extras: [] });
+    }
+  }
+  return groups;
+}
+
 function SkeletonRow() {
   return (
     <div className="flex items-baseline justify-between py-3">
@@ -45,8 +63,35 @@ export function MeasurementsPage() {
   const [editingEntry, setEditingEntry] = useState<WeightEntry | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerKey, setDrawerKey] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+
+  const today = new Date();
+  const [viewedMonth, setViewedMonth] = useState({ year: today.getFullYear(), month: today.getMonth() });
+  const isCurrentMonth = viewedMonth.year === today.getFullYear() && viewedMonth.month === today.getMonth();
+  const monthName = new Date(viewedMonth.year, viewedMonth.month, 1)
+    .toLocaleDateString("en-GB", { month: "long" })
+    .toUpperCase();
+  const monthLabel = `${monthName} '${String(viewedMonth.year).slice(-2)}`;
+
+  function goToPrevMonth() {
+    const d = new Date(viewedMonth.year, viewedMonth.month - 1, 1);
+    setViewedMonth({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  function goToNextMonth() {
+    if (isCurrentMonth) return;
+    const d = new Date(viewedMonth.year, viewedMonth.month + 1, 1);
+    setViewedMonth({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  function toggleExpanded(date: string) {
+    setExpandedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  }
 
   // A network failure never reaches the API and surfaces as a plain fetch
   // error, not an ApiError (data/http.ts only wraps a response the
@@ -69,26 +114,10 @@ export function MeasurementsPage() {
   const dailyMinimums = selectDailyMinimums(entries);
   const sorted = sortForJournal(entries);
   const latest = dailyMinimums.at(-1);
-  const visible = sorted.slice(0, visibleCount);
 
-  const countsByDate = new Map<string, number>();
-  for (const entry of sorted) {
-    countsByDate.set(entry.date, (countsByDate.get(entry.date) ?? 0) + 1);
-  }
-
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver((observerEntries) => {
-      if (observerEntries[0]?.isIntersecting) {
-        setVisibleCount((count) => Math.min(count + PAGE_SIZE, sorted.length));
-      }
-    });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [sorted.length]);
+  const monthKey = `${viewedMonth.year}-${String(viewedMonth.month + 1).padStart(2, "0")}`;
+  const monthEntries = sorted.filter((entry) => entry.date.startsWith(monthKey));
+  const groups = groupByDate(monthEntries);
 
   function openAddDrawer() {
     setEditingEntry(undefined);
@@ -105,116 +134,160 @@ export function MeasurementsPage() {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-8">
-        <Header
-          eyebrow="SELF/OS"
-          title="Weight"
-          primary={latest ? { label: "Latest", value: `${latest.kg} kg`, progress: 1 } : undefined}
-          note={
-            <Button size="sm" onClick={openAddDrawer}>
-              Log Weight
-            </Button>
-          }
-        />
+    <div className="flex h-[calc(100dvh-4rem)] flex-col p-4">
+      <div className="shrink-0">
+        <div className="mb-4">
+          <Header
+            eyebrow="SELF/OS"
+            title="Weight"
+            primary={latest ? { label: "Latest", value: `${latest.kg} kg`, progress: 1 } : undefined}
+            note={
+              <Button size="sm" onClick={openAddDrawer}>
+                Log Weight
+              </Button>
+            }
+          />
+        </div>
+
+        {state === "ready" && (
+          <>
+            <WeightSparkline entries={dailyMinimums} />
+
+            <div className="flex items-center justify-between border-t pt-4">
+              <p className="font-mono text-xs uppercase text-muted-foreground">{monthLabel}</p>
+              <div className="flex items-center gap-1">
+                <Button size="icon-sm" variant="ghost" onClick={goToPrevMonth} aria-label="Previous month">
+                  <ChevronLeft />
+                </Button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={isCurrentMonth}
+                  onClick={goToNextMonth}
+                  aria-label="Next month"
+                >
+                  <ChevronRight />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {state === "loading" && (
-        <>
-          <div className="h-8 w-full animate-pulse rounded bg-muted" />
-          <SectionStat label="Log">
-            <div className="space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        {state === "loading" && (
+          <>
+            <div className="h-8 w-full animate-pulse rounded bg-muted" />
+            <div className="space-y-1 pt-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonRow key={i} />
               ))}
             </div>
-          </SectionStat>
-        </>
-      )}
+          </>
+        )}
 
-      {state === "error" && (
-        <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
-          <p className="font-medium text-destructive">Couldn't load your weight history.</p>
-          <p className="mt-1 text-muted-foreground">Something went wrong on our end — try again.</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={() => query.refetch()}>
-            Retry
-          </Button>
-        </div>
-      )}
+        {state === "error" && (
+          <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+            <p className="font-medium text-destructive">Couldn't load your weight history.</p>
+            <p className="mt-1 text-muted-foreground">Something went wrong on our end — try again.</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => query.refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
 
-      {state === "offline" && (
-        <div className="mt-8 rounded-lg border p-4 text-sm">
-          <p className="font-medium">You're offline.</p>
-          <p className="mt-1 text-muted-foreground">Your weight history needs a connection to load.</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={() => query.refetch()}>
-            Retry
-          </Button>
-        </div>
-      )}
+        {state === "offline" && (
+          <div className="mt-8 rounded-lg border p-4 text-sm">
+            <p className="font-medium">You're offline.</p>
+            <p className="mt-1 text-muted-foreground">Your weight history needs a connection to load.</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => query.refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
 
-      {state === "empty" && (
-        <div className="mt-8 rounded-lg border border-dashed p-6 text-center">
-          <p className="text-sm text-muted-foreground">No weigh-ins yet.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Log your first to start the trend.</p>
-          <Button size="sm" className="mt-4" onClick={openAddDrawer}>
-            Log Weight
-          </Button>
-        </div>
-      )}
+        {state === "empty" && (
+          <div className="mt-8 rounded-lg border border-dashed p-6 text-center">
+            <p className="text-sm text-muted-foreground">No weigh-ins yet.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Log your first to start the trend.</p>
+            <Button size="sm" className="mt-4" onClick={openAddDrawer}>
+              Log Weight
+            </Button>
+          </div>
+        )}
 
-      {state === "ready" && (
-        <>
-          <WeightSparkline entries={dailyMinimums} />
-
-          <SectionStat label="Latest" value={latest ? `${latest.kg} kg` : "—"} />
-
-          <SectionStat label="Log">
+        {state === "ready" && (
+          <>
             <ul>
-              {visible.map((entry, index) => {
-                const isNewDate = index === 0 || entry.date !== visible[index - 1].date;
-                const isDayMin = dailyMinimums.some((min) => min.id === entry.id);
-                const hasSiblingSameDay = (countsByDate.get(entry.date) ?? 1) > 1;
-
-                return (
-                  <li key={entry.id} className={isNewDate ? "mt-3 first:mt-0" : ""}>
+              {groups.map((group) => (
+                <li key={group.date} className="mt-3 first:mt-0">
+                  <div className="flex w-full items-center gap-1 py-1.5">
                     <button
                       type="button"
-                      onClick={() => openEditDrawer(entry)}
-                      className="flex w-full items-baseline justify-between py-1.5 text-left"
+                      onClick={() => openEditDrawer(group.primary)}
+                      className="text-left"
                     >
-                      <span className={isNewDate ? "" : "pl-4 text-xs text-muted-foreground"}>
-                        {isNewDate ? formatDate(entry.date) : "same day"}
-                      </span>
-                      <span
-                        className={
-                          isDayMin
-                            ? "font-mono text-sm font-semibold"
-                            : "font-mono text-sm text-muted-foreground"
+                      {formatDate(group.date)}
+                    </button>
+                    {group.extras.length > 0 && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => toggleExpanded(group.date)}
+                        aria-expanded={expandedDates.has(group.date)}
+                        aria-label={
+                          expandedDates.has(group.date) ? "Hide additional entries" : "Show additional entries"
                         }
                       >
-                        {isDayMin && hasSiblingSameDay && (
-                          <span className="mr-1.5 rounded bg-primary/10 px-1 text-[9px] font-sans uppercase text-primary">
-                            min
-                          </span>
-                        )}
-                        {entry.kg} kg
-                      </span>
+                        <ChevronDown
+                          className={cn("size-3.5 transition-transform", expandedDates.has(group.date) && "rotate-180")}
+                        />
+                      </Button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => openEditDrawer(group.primary)}
+                      className="ml-auto font-mono text-sm font-semibold"
+                    >
+                      {group.primary.kg} kg
                     </button>
-                  </li>
-                );
-              })}
+                  </div>
+
+                  {group.extras.length > 0 && expandedDates.has(group.date) && (
+                    <ul>
+                      {group.extras.map((entry) => (
+                        <li key={entry.id}>
+                          <button
+                            type="button"
+                            onClick={() => openEditDrawer(entry)}
+                            className="flex w-full items-baseline justify-between py-1.5 pl-4 text-left"
+                          >
+                            <span className="text-xs text-muted-foreground">same day</span>
+                            <span className="font-mono text-sm text-muted-foreground">{entry.kg} kg</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
             </ul>
 
-            {visibleCount < sorted.length && <div ref={sentinelRef} className="h-8" />}
-          </SectionStat>
-        </>
-      )}
+            {groups.length === 0 && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                No entries in {monthLabel.charAt(0) + monthLabel.slice(1).toLowerCase()}.
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       <MeasurementDrawer
         key={drawerKey}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         entry={editingEntry}
+        latestKg={latest?.kg}
       />
     </div>
   );

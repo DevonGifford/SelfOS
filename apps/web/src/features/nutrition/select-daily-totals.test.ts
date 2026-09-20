@@ -17,6 +17,7 @@ function entry(overrides: Partial<FoodEntries[number]> = {}): FoodEntries[number
     fat: 10,
     date: "2026-09-14",
     createdAt: "2026-09-14T08:00:00Z",
+    mealSlot: "breakfast",
     ...overrides,
   };
 }

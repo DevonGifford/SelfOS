@@ -1,6 +1,11 @@
 import { ConfigurationSchema, type Configuration } from "@/data/schemas/configuration";
 import { ExerciseSchema, ExercisesSchema, type Exercise } from "@/data/schemas/exercises";
-import { FoodEntriesSchema, FoodEntrySchema, type FoodEntry } from "@/data/schemas/food-entries";
+import {
+  FoodEntriesSchema,
+  FoodEntrySchema,
+  type FoodEntry,
+  type MealSlot,
+} from "@/data/schemas/food-entries";
 import { FoodSchema, FoodsSchema, type Food } from "@/data/schemas/foods";
 import { HabitEntriesSchema, HabitEntrySchema, type HabitEntry } from "@/data/schemas/habit-entries";
 import { HabitSchema, HabitsSchema, type Habit } from "@/data/schemas/habits";
@@ -188,6 +193,11 @@ export async function createFoodEntry(input: {
   foodId: string;
   quantity: number;
   date: string;
+  mealSlot: MealSlot;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 }): Promise<FoodEntry> {
   const response = await fetch(FOOD_ENTRIES_URL, {
     method: "POST",
@@ -198,11 +208,21 @@ export async function createFoodEntry(input: {
   return FoodEntrySchema.parse(body);
 }
 
-export async function updateFoodEntry(id: string, quantity: number): Promise<FoodEntry> {
+export async function updateFoodEntry(
+  id: string,
+  input: {
+    quantity: number;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    mealSlot?: MealSlot;
+  },
+): Promise<FoodEntry> {
   const response = await fetch(`${FOOD_ENTRIES_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quantity }),
+    body: JSON.stringify(input),
   });
   const body = await parseOrThrow(response);
   return FoodEntrySchema.parse(body);

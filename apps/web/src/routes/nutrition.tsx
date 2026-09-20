@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, EllipsisVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Header } from "@/components/ui/header";
 import { SectionStat } from "@/components/ui/section-stat";
 import type { FoodEntry } from "@/data/schemas/food-entries";
@@ -9,11 +16,14 @@ import { useConfiguration } from "@/features/configuration/use-configuration";
 import { EntryDrawer } from "@/features/nutrition/entry-drawer";
 import { FoodDrawer } from "@/features/nutrition/food-drawer";
 import { selectDailyTotals } from "@/features/nutrition/select-daily-totals";
+import { selectMealGroups } from "@/features/nutrition/select-meal-groups";
+import { useDeleteFoodEntry } from "@/features/nutrition/use-food-entry-mutations";
 import { useFoodEntries } from "@/features/nutrition/use-food-entries";
 import { useFoods } from "@/features/nutrition/use-foods";
-import { todayString } from "@/lib/date";
+import { dateWithOffset } from "@/lib/date";
 import { useOpenAddFromQuery } from "@/lib/use-open-add-from-query";
-import { StatusNutrition } from "@/features/status/nutrition";
+
+const MAX_DAYS_BACK = 7;
 
 function macroProgress(consumed: number, target: number) {
   return target > 0 ? Math.max(0, Math.min(consumed / target, 1)) : 0;
@@ -23,12 +33,14 @@ export function NutritionPage() {
   const entriesQuery = useFoodEntries();
   const foodsQuery = useFoods();
   const configQuery = useConfiguration();
+  const deleteMutation = useDeleteFoodEntry();
 
   const [addOpen, setAddOpen] = useState(false);
   const [addKey, setAddKey] = useState(0);
   const [editingEntry, setEditingEntry] = useState<FoodEntry | undefined>(undefined);
   const [editOpen, setEditOpen] = useState(false);
   const [editKey, setEditKey] = useState(0);
+  const [dayOffset, setDayOffset] = useState(0);
 
   useOpenAddFromQuery(openAddDrawer);
 
@@ -36,10 +48,25 @@ export function NutritionPage() {
 
   const entries = entriesQuery.data;
   const foods = foodsQuery.data;
-  const today = todayString();
 
-  const data = selectDailyTotals(entries, today, selectNutritionTargets(configQuery.data));
-  const todaysEntries = entries.filter((entry) => entry.date === today);
+  const isToday = dayOffset === 0;
+  const viewedDate = dateWithOffset(dayOffset);
+  const dateLabel = new Date(`${viewedDate}T00:00:00`)
+    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+    .toUpperCase();
+
+  const data = selectDailyTotals(entries, viewedDate, selectNutritionTargets(configQuery.data));
+  const viewedEntries = entries.filter((entry) => entry.date === viewedDate);
+
+  function goToPrevDay() {
+    if (dayOffset <= -MAX_DAYS_BACK) return;
+    setDayOffset((o) => o - 1);
+  }
+
+  function goToNextDay() {
+    if (isToday) return;
+    setDayOffset((o) => o + 1);
+  }
 
   function openAddDrawer() {
     setAddOpen(true);
@@ -57,7 +84,7 @@ export function NutritionPage() {
       <Header
         eyebrow="SELF/OS"
         title="Nutrition"
-        subtitle="Today"
+        subtitle={isToday ? "Today" : dateLabel}
         primary={{
           label: "Calories",
           value: data.totals.calories.consumed.toLocaleString(),
@@ -68,47 +95,109 @@ export function NutritionPage() {
           value: `${data.totals.protein.consumed}g`,
           progress: macroProgress(data.totals.protein.consumed, data.totals.protein.target),
         }}
+        note={
+          <Button size="sm" variant="outline" onClick={openAddDrawer}>
+            + Add Food
+          </Button>
+        }
       />
 
-      <StatusNutrition nutrition={data.totals} />
-
-      <SectionStat
-        label="Today"
-        value={`${data.totals.calories.consumed} / ${data.totals.calories.target} KCAL`}
-      />
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={goToPrevDay}
+            disabled={dayOffset <= -MAX_DAYS_BACK}
+            aria-label="Previous day"
+          >
+            <ChevronLeft />
+          </Button>
+          <p className="font-mono text-xs uppercase text-muted-foreground">
+            {isToday ? "Today" : dateLabel}
+          </p>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={goToNextDay}
+            disabled={isToday}
+            aria-label="Next day"
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+        {!isToday && (
+          <Button size="xs" variant="ghost" onClick={() => setDayOffset(0)} aria-label="Jump to today">
+            Today
+          </Button>
+        )}
+      </div>
 
       <SectionStat label="Meals">
-        <Button size="sm" variant="outline" className="mb-3" onClick={openAddDrawer}>
-          + Add Food
-        </Button>
-
-        <ul className="space-y-3">
-          {todaysEntries.map((entry) => (
-            <li key={entry.id}>
-              <button
-                type="button"
-                onClick={() => openEditDrawer(entry)}
-                className="flex w-full items-baseline justify-between text-left"
-              >
-                <span>
-                  {entry.name}
-                  {entry.quantity !== 1 && (
-                    <span className="ml-1 text-xs text-muted-foreground">{entry.quantity}x</span>
-                  )}
-                </span>
-                <span className="font-mono text-sm text-muted-foreground">
-                  {entry.calories} KCAL
-                </span>
-              </button>
-            </li>
+        <div className="flex flex-col gap-4">
+          {selectMealGroups(viewedEntries).map((group) => (
+            <div key={group.slot}>
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </p>
+              <ul className="space-y-1">
+                {group.items.map((entry) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditDrawer(entry)}
+                      className="flex min-w-0 flex-1 items-baseline justify-between gap-2 py-2 text-left"
+                    >
+                      <span className="truncate">
+                        {entry.name}
+                        {entry.quantity !== 1 && (
+                          <span className="ml-1 text-xs text-muted-foreground">{entry.quantity}x</span>
+                        )}
+                      </span>
+                      <span className="shrink-0 font-mono text-sm text-muted-foreground">
+                        {entry.calories} KCAL
+                      </span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            size="icon-lg"
+                            variant="ghost"
+                            aria-label={`Actions for ${entry.name}`}
+                          />
+                        }
+                      >
+                        <EllipsisVertical />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-auto min-w-40">
+                        <DropdownMenuItem onClick={() => openEditDrawer(entry)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => deleteMutation.mutate(entry.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       </SectionStat>
 
-      <FoodDrawer key={addKey} open={addOpen} onOpenChange={setAddOpen} foods={foods} date={today} />
+      <FoodDrawer key={addKey} open={addOpen} onOpenChange={setAddOpen} foods={foods} date={viewedDate} />
 
       {editingEntry && (
-        <EntryDrawer key={editKey} open={editOpen} onOpenChange={setEditOpen} entry={editingEntry} />
+        <EntryDrawer
+          key={editKey}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          entry={editingEntry}
+          foods={foods}
+        />
       )}
     </div>
   );

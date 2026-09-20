@@ -95,6 +95,24 @@ export const router = createBrowserRouter([
           <ComingSoonPage title="Weight History" description="A dedicated trend view — the Measurements page's own trend and log stay where they are for now." />
         ),
       },
+      {
+        path: "nutrition/barcode-scan",
+        element: (
+          <ComingSoonPage title="Barcode Scan" description="Scan a food's barcode to log it instantly — coming soon." />
+        ),
+      },
+      {
+        path: "nutrition/voice-log",
+        element: (
+          <ComingSoonPage title="Voice Log" description="Describe what you ate out loud and have it logged automatically — coming soon." />
+        ),
+      },
+      {
+        path: "nutrition/meal-scan",
+        element: (
+          <ComingSoonPage title="Meal Scan" description="Snap a photo of your meal and have it logged automatically — coming soon." />
+        ),
+      },
     ],
   },
 ]);
