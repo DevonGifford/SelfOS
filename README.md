@@ -1,7 +1,7 @@
 <div align="center">
   <!-- cover logo -->
   <p align='center'>
-    <img src="docs/SelfOS-Logo.png" alt="Demo" title="DemoImage" height="350">
+    <img src="docs/images/SelfOS-Logo-Small.png" alt="Demo" title="DemoImage" height="250">
   </p>
   <!-- sub headline -->
   <h2>
@@ -55,8 +55,13 @@ SelfOS is designed around a single backend API shared by multiple clients. The W
                                                       └─────────────────────────────┘
 ```
                                                            
-#### Repository Structure
-The repository is intended to grow into a small multi-client monorepo, with deployable applications under `apps/`, reusable frontend code under `packages/` and database concerns kept separately under `database/`.  The structure below represents the intended direction of the project;
+<details>
+<summary><strong>Repository Structure</strong></summary>
+<br/>
+
+The repository is intended to grow into a small multi-client monorepo, with deployable applications under `apps/`, reusable frontend code under `packages/` and database concerns kept separately under `database/`.
+
+The structure below represents the intended direction of the project:
 
 ```text
 SelfOS/
@@ -83,24 +88,62 @@ SelfOS/
 └── package.json
 ```
 
-<br/>
-<br/>
-
-### Technology Stack
+</details>
 
 ---
 
-#### [Web Client - Frontend](./apps/web)
+<details>
+<summary><strong>Technology Stack</strong></summary>
+
+##### [Web Client - Frontend](./apps/web)
 
 The frontend web client lives in `apps/web` and is built with React, TypeScript & Vite. It is intentionally mobile-first: the mobile layout is the product, while desktop simply provides more space around the same narrow application shell.
 
-#### [Go API - Backend](./apps/api)
+##### [Go API - Backend](./apps/api)
 
 The backend lives in `apps/api` and is built with Go's standard `net/http`, `sqlc` & `goose`. It provides the central API shared by SelfOS clients and owns the application's validation, business logic, authentication and persistence.
 
-#### [PostgreSQL - Database](./database)
+##### [PostgreSQL - Database](./database)
 
 The database layer lives in `database/` and is built around plain PostgreSQL. Local development runs PostgreSQL through Docker Compose, while hosted production uses [Neon](https://neon.com). The same schema, migrations and queries are used in both environments.
 
+</details>
+
+---
+
+<details>
+<summary><strong>Feature set</strong></summary>
+<br/>
+
+SelfOS is built around a collection of personal tracking modules, all connected
+through a shared API and database. Everything ticked below works end-to-end today:
+PWA → Go API → PostgreSQL.
+
+#### Core Modules
+
+- [x] **Training & exercise** <br/> sessions logged set by set, reusable templates per
+      workout type, strength & cardio, rest timer, resume an unfinished session
+- [x] **Nutrition** <br/> food definitions with per-serving macros, daily entries by
+      meal slot, configurable targets vs. actuals
+- [x] **Habits & routines** <br/> daily habits with custom ordering and completion history
+- [x] **Body measurements** <br/> body-weight readings with trend over time
+- [x] **Daily status** <br/> one home rollup deriving today's training, nutrition,
+      habits & weight from the raw history
+- [ ] **Health data integrations** <br/> read from the devices you already wear
+
+#### Platform
+
+- [x] **Web app** — mobile-first, installable PWA
+- [x] **Password login** — single-user session, no accounts to manage
+- [x] **Guest mode** — explore the live demo with fabricated data, held in memory
+      and never persisted
+- [ ] **Mobile app** — Expo / React Native
+- [ ] **TRMNL dashboard** — e-ink daily view
+
+</details>
+
+---
+
 <br/>
 <br/>
+
